@@ -5,9 +5,16 @@ import (
 	"database/sql"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
+	// Uncomment after generating proto files
+	// "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	// "google.golang.org/grpc/credentials/insecure"
+	// "github.com/tvttt/gokits/swagger"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -31,6 +38,7 @@ type App struct {
 	container  *container.Container
 	db         *sql.DB
 	grpcServer *grpc.Server
+	httpServer *http.Server
 }
 
 // New creates a new App instance
@@ -110,25 +118,120 @@ func (a *App) Initialize() error {
 // Run starts the application
 func (a *App) Run() error {
 	// Start gRPC server
-	address := a.config.Server.GetServerAddress()
-	listener, err := net.Listen("tcp", address)
+	grpcAddress := a.config.Server.GetServerAddress()
+	listener, err := net.Listen("tcp", grpcAddress)
 	if err != nil {
-		return fmt.Errorf("failed to listen on %s: %w", address, err)
+		return fmt.Errorf("failed to listen on %s: %w", grpcAddress, err)
 	}
 
 	// Start gRPC server in goroutine with panic recovery
 	middleware.RecoverGoroutine(a.logger, "grpc-server", func() {
-		a.logger.Info("gRPC server is running", zap.String("address", address))
+		a.logger.Info("gRPC server is running", zap.String("address", grpcAddress))
 		if err := a.grpcServer.Serve(listener); err != nil {
 			a.logger.Error("gRPC server stopped with error", zap.Error(err))
 		}
 	})
+
+	// Setup HTTP Gateway + Swagger
+	// TODO: Uncomment after generating proto files
+	// Run: powershell -ExecutionPolicy Bypass -File .\scripts\generate-proto.ps1
+	/*
+		if err := a.setupHTTPGateway(); err != nil {
+			return fmt.Errorf("failed to setup HTTP gateway: %w", err)
+		}
+	*/
 
 	// Wait for shutdown signal
 	a.waitForShutdown()
 
 	return nil
 }
+
+// setupHTTPGateway sets up the HTTP gateway with Swagger UI
+// Uncomment after generating proto files
+/*
+func (a *App) setupHTTPGateway() error {
+	// Create gRPC Gateway mux
+	gwMux := runtime.NewServeMux()
+
+	// Register gRPC-Gateway handlers
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	grpcEndpoint := a.config.Server.GetServerAddress()
+
+	err := pb.RegisterIAMServiceHandlerFromEndpoint(context.Background(), gwMux, grpcEndpoint, opts)
+	if err != nil {
+		return fmt.Errorf("failed to register gateway: %w", err)
+	}
+
+	// Create HTTP mux
+	mux := http.NewServeMux()
+
+	// Register gRPC Gateway
+	mux.Handle("/", corsMiddleware(gwMux))
+
+	// Register Swagger UI
+	if a.config.Swagger.Enabled {
+		swaggerCfg := &swagger.Config{
+			BasePath: a.config.Swagger.BasePath,
+			SpecPath: a.config.Swagger.SpecPath,
+			Title:    a.config.Swagger.Title,
+			Enabled:  true,
+		}
+
+		// Swagger UI handler
+		mux.HandleFunc(a.config.Swagger.BasePath, swagger.Handler(swaggerCfg, a.logger))
+
+		// Swagger spec handler
+		mux.HandleFunc(a.config.Swagger.SpecPath, swagger.ServeSpec("./pkg/proto/iam_gateway.swagger.json", a.logger))
+
+		a.logger.Info("Swagger UI enabled",
+			zap.String("url", fmt.Sprintf("http://%s%s", a.config.Server.GetHTTPServerAddress(), a.config.Swagger.BasePath)),
+		)
+	}
+
+	// Create HTTP server
+	httpAddress := a.config.Server.GetHTTPServerAddress()
+	a.httpServer = &http.Server{
+		Addr:         httpAddress,
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	// Start HTTP server in goroutine with panic recovery
+	middleware.RecoverGoroutine(a.logger, "http-server", func() {
+		a.logger.Info("HTTP Gateway is running",
+			zap.String("address", httpAddress),
+			zap.String("swagger", fmt.Sprintf("http://%s%s", httpAddress, a.config.Swagger.BasePath)),
+		)
+
+		if err := a.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			a.logger.Error("HTTP server stopped with error", zap.Error(err))
+		}
+	})
+
+	return nil
+}
+
+// corsMiddleware adds CORS headers
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
+
+		// Handle preflight
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+*/
 
 // waitForShutdown handles graceful shutdown
 func (a *App) waitForShutdown() {
@@ -144,8 +247,22 @@ func (a *App) waitForShutdown() {
 func (a *App) Shutdown(ctx context.Context) error {
 	var shutdownErrors []error
 
+	// Stop HTTP server
+	if a.httpServer != nil {
+		a.logger.Info("Stopping HTTP server...")
+		shutdownCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+
+		if err := a.httpServer.Shutdown(shutdownCtx); err != nil {
+			shutdownErrors = append(shutdownErrors, fmt.Errorf("HTTP server shutdown error: %w", err))
+		} else {
+			a.logger.Info("HTTP server stopped")
+		}
+	}
+
 	// Stop gRPC server
 	if a.grpcServer != nil {
+		a.logger.Info("Stopping gRPC server...")
 		a.grpcServer.GracefulStop()
 		a.logger.Info("gRPC server stopped")
 	}

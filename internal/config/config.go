@@ -15,6 +15,7 @@ type Config struct {
 	Database DatabaseConfig
 	JWT      JWTConfig
 	Log      LogConfig
+	Swagger  SwaggerConfig
 }
 
 // ServerConfig holds server configuration
@@ -48,6 +49,14 @@ type LogConfig struct {
 	Encoding string
 }
 
+// SwaggerConfig holds Swagger UI configuration
+type SwaggerConfig struct {
+	Enabled  bool
+	BasePath string
+	SpecPath string
+	Title    string
+}
+
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
 	// Try to load .env file (ignore error if not found)
@@ -76,6 +85,12 @@ func Load() (*Config, error) {
 		Log: LogConfig{
 			Level:    getEnv("LOG_LEVEL", "info"),
 			Encoding: getEnv("LOG_ENCODING", "json"),
+		},
+		Swagger: SwaggerConfig{
+			Enabled:  getBoolEnv("SWAGGER_ENABLED", true),
+			BasePath: getEnv("SWAGGER_BASE_PATH", "/swagger/"),
+			SpecPath: getEnv("SWAGGER_SPEC_PATH", "/swagger.json"),
+			Title:    getEnv("SWAGGER_TITLE", "IAM Service API Documentation"),
 		},
 	}
 
@@ -118,4 +133,16 @@ func getDurationEnv(key string, defaultValue int) time.Duration {
 		return time.Duration(defaultValue)
 	}
 	return time.Duration(value)
+}
+
+func getBoolEnv(key string, defaultValue bool) bool {
+	valueStr := os.Getenv(key)
+	if valueStr == "" {
+		return defaultValue
+	}
+	value, err := strconv.ParseBool(valueStr)
+	if err != nil {
+		return defaultValue
+	}
+	return value
 }
