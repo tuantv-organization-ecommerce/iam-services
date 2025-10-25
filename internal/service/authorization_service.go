@@ -77,7 +77,13 @@ func (s *authorizationService) GetUserRoles(ctx context.Context, userID string) 
 		if err != nil {
 			return nil, fmt.Errorf("failed to get role permissions: %w", err)
 		}
-		roles[i].Permissions = permissions
+		// Convert []*Permission to []Permission
+		roles[i].Permissions = make([]domain.Permission, len(permissions))
+		for j, p := range permissions {
+			if p != nil {
+				roles[i].Permissions[j] = *p
+			}
+		}
 	}
 
 	return roles, nil

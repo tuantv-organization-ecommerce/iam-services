@@ -14,11 +14,12 @@ import (
 // GRPCHandler implements the gRPC IAMService
 type GRPCHandler struct {
 	pb.UnimplementedIAMServiceServer
-	authService  service.AuthService
-	authzService service.AuthorizationService
-	roleService  service.RoleService
-	permService  service.PermissionService
-	logger       *zap.Logger
+	authService   service.AuthService
+	authzService  service.AuthorizationService
+	roleService   service.RoleService
+	permService   service.PermissionService
+	casbinService service.CasbinService
+	logger        *zap.Logger
 }
 
 // NewGRPCHandler creates a new gRPC handler
@@ -27,14 +28,16 @@ func NewGRPCHandler(
 	authzService service.AuthorizationService,
 	roleService service.RoleService,
 	permService service.PermissionService,
+	casbinService service.CasbinService,
 	logger *zap.Logger,
 ) *GRPCHandler {
 	return &GRPCHandler{
-		authService:  authService,
-		authzService: authzService,
-		roleService:  roleService,
-		permService:  permService,
-		logger:       logger,
+		authService:   authService,
+		authzService:  authzService,
+		roleService:   roleService,
+		permService:   permService,
+		casbinService: casbinService,
+		logger:        logger,
 	}
 }
 

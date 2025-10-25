@@ -78,7 +78,14 @@ func (r *roleRepository) GetRoleWithPermissions(ctx context.Context, id string) 
 		return nil, fmt.Errorf("failed to get role permissions: %w", err)
 	}
 
-	role.Permissions = permissions
+	// Convert []*Permission to []Permission
+	role.Permissions = make([]domain.Permission, len(permissions))
+	for i, p := range permissions {
+		if p != nil {
+			role.Permissions[i] = *p
+		}
+	}
+
 	return role, nil
 }
 

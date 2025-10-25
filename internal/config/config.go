@@ -19,8 +19,10 @@ type Config struct {
 
 // ServerConfig holds server configuration
 type ServerConfig struct {
-	Host string
-	Port string
+	Host     string
+	Port     string
+	HTTPHost string
+	HTTPPort string
 }
 
 // DatabaseConfig holds database configuration
@@ -53,8 +55,10 @@ func Load() (*Config, error) {
 
 	config := &Config{
 		Server: ServerConfig{
-			Host: getEnv("SERVER_HOST", "0.0.0.0"),
-			Port: getEnv("SERVER_PORT", "50051"),
+			Host:     getEnv("SERVER_HOST", "0.0.0.0"),
+			Port:     getEnv("SERVER_PORT", "50051"),
+			HTTPHost: getEnv("HTTP_HOST", "0.0.0.0"),
+			HTTPPort: getEnv("HTTP_PORT", "8080"),
 		},
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
@@ -86,9 +90,14 @@ func (c *DatabaseConfig) GetDSN() string {
 	)
 }
 
-// GetServerAddress returns the server address
+// GetServerAddress returns the gRPC server address
 func (c *ServerConfig) GetServerAddress() string {
 	return fmt.Sprintf("%s:%s", c.Host, c.Port)
+}
+
+// GetHTTPServerAddress returns the HTTP gateway server address
+func (c *ServerConfig) GetHTTPServerAddress() string {
+	return fmt.Sprintf("%s:%s", c.HTTPHost, c.HTTPPort)
 }
 
 func getEnv(key, defaultValue string) string {

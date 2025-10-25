@@ -30,6 +30,22 @@ service IAMService {
   rpc CreatePermission(CreatePermissionRequest) returns (CreatePermissionResponse);
   rpc DeletePermission(DeletePermissionRequest) returns (DeletePermissionResponse);
   rpc ListPermissions(ListPermissionsRequest) returns (ListPermissionsResponse);
+  
+  // Casbin Authorization - Phân quyền theo Casbin RBAC
+  rpc CheckAPIAccess(CheckAPIAccessRequest) returns (CheckAPIAccessResponse);
+  rpc CheckCMSAccess(CheckCMSAccessRequest) returns (CheckCMSAccessResponse);
+  rpc EnforcePolicy(EnforcePolicyRequest) returns (EnforcePolicyResponse);
+  
+  // CMS Role Management - Quản lý vai trò CMS
+  rpc CreateCMSRole(CreateCMSRoleRequest) returns (CreateCMSRoleResponse);
+  rpc AssignCMSRole(AssignCMSRoleRequest) returns (AssignCMSRoleResponse);
+  rpc RemoveCMSRole(RemoveCMSRoleRequest) returns (RemoveCMSRoleResponse);
+  rpc GetUserCMSTabs(GetUserCMSTabsRequest) returns (GetUserCMSTabsResponse);
+  rpc ListCMSRoles(ListCMSRolesRequest) returns (ListCMSRolesResponse);
+  
+  // API Resource Management - Quản lý tài nguyên API
+  rpc CreateAPIResource(CreateAPIResourceRequest) returns (CreateAPIResourceResponse);
+  rpc ListAPIResources(ListAPIResourcesRequest) returns (ListAPIResourcesResponse);
 }
 
 // ===== Authentication Messages =====
@@ -239,6 +255,137 @@ message Permission {
   string name = 2;
   string resource = 3;
   string action = 4;
+  string description = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+// ===== Casbin Authorization Messages =====
+
+message CheckAPIAccessRequest {
+  string user_id = 1;
+  string api_path = 2;
+  string method = 3;
+}
+
+message CheckAPIAccessResponse {
+  bool allowed = 1;
+  string message = 2;
+}
+
+message CheckCMSAccessRequest {
+  string user_id = 1;
+  string cms_tab = 2;
+  string action = 3;
+}
+
+message CheckCMSAccessResponse {
+  bool allowed = 1;
+  string message = 2;
+  repeated string accessible_tabs = 3;
+}
+
+message EnforcePolicyRequest {
+  string user_id = 1;
+  string domain = 2;
+  string resource = 3;
+  string action = 4;
+}
+
+message EnforcePolicyResponse {
+  bool allowed = 1;
+  string reason = 2;
+}
+
+// ===== CMS Role Management Messages =====
+
+message CreateCMSRoleRequest {
+  string name = 1;
+  string description = 2;
+  repeated string tabs = 3;
+}
+
+message CreateCMSRoleResponse {
+  string cms_role_id = 1;
+  string message = 2;
+}
+
+message AssignCMSRoleRequest {
+  string user_id = 1;
+  string cms_role_id = 2;
+}
+
+message AssignCMSRoleResponse {
+  string message = 1;
+}
+
+message RemoveCMSRoleRequest {
+  string user_id = 1;
+  string cms_role_id = 2;
+}
+
+message RemoveCMSRoleResponse {
+  string message = 1;
+}
+
+message GetUserCMSTabsRequest {
+  string user_id = 1;
+}
+
+message GetUserCMSTabsResponse {
+  repeated string tabs = 1;
+  repeated CMSRole roles = 2;
+}
+
+message ListCMSRolesRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message ListCMSRolesResponse {
+  repeated CMSRole roles = 1;
+  int32 total = 2;
+}
+
+message CMSRole {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated string tabs = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+// ===== API Resource Management Messages =====
+
+message CreateAPIResourceRequest {
+  string path = 1;
+  string method = 2;
+  string service = 3;
+  string description = 4;
+}
+
+message CreateAPIResourceResponse {
+  string api_resource_id = 1;
+  string message = 2;
+}
+
+message ListAPIResourcesRequest {
+  string service = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message ListAPIResourcesResponse {
+  repeated APIResource resources = 1;
+  int32 total = 2;
+}
+
+message APIResource {
+  string id = 1;
+  string path = 2;
+  string method = 3;
+  string service = 4;
   string description = 5;
   string created_at = 6;
   string updated_at = 7;

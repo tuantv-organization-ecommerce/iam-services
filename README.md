@@ -1,6 +1,23 @@
 # IAM Service (Identity and Access Management)
 
-Service quản lý xác thực và phân quyền người dùng cho hệ thống e-commerce.
+Service quản lý xác thực và phân quyền người dùng cho hệ thống e-commerce với **Casbin RBAC** integration.
+
+## 🆕 What's New: gRPC Gateway (REST API)
+
+IAM Service hiện hỗ trợ **cả gRPC và REST API** thông qua gRPC Gateway!
+
+- **gRPC Server**: `localhost:50051`
+- **REST API**: `http://localhost:8080`
+
+Quick test REST API:
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+```
+
+👉 **[Quick Start Guide](GATEWAY_QUICKSTART.md)**  
+👉 **[Full REST API Documentation](docs/GRPC_GATEWAY.md)**
 
 ## Tính năng chính
 
@@ -16,6 +33,13 @@ Service quản lý xác thực và phân quyền người dùng cho hệ thống
 - ✅ Xóa vai trò khỏi người dùng
 - ✅ Lấy danh sách vai trò của người dùng
 - ✅ Kiểm tra quyền truy cập
+
+### **🆕 Casbin RBAC Authorization**
+- ✅ **Multi-domain authorization** (user, cms, api)
+- ✅ **CMS role management** với phân quyền theo tabs
+- ✅ **API resource tracking** và phân quyền chi tiết
+- ✅ **Pattern matching** cho flexible permissions
+- ✅ **Policy enforcement** với Casbin engine
 
 ### Role Management (Quản lý vai trò)
 - ✅ Tạo vai trò mới
@@ -212,6 +236,8 @@ grpcurl -plaintext -d '{
 - [Hướng dẫn cài đặt](docs/SETUP.md)
 - [API Documentation](docs/API.md)
 - [Database Schema](docs/DATABASE.md)
+- **[🆕 Casbin RBAC Guide](docs/CASBIN.md)** - Chi tiết về Casbin authorization
+- **[🆕 Casbin Quick Start](README_CASBIN.md)** - Quick start guide
 
 ## License
 

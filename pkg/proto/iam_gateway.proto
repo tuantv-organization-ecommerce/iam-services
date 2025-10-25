@@ -1,0 +1,197 @@
+syntax = "proto3";
+
+package iam;
+
+import "google/api/annotations.proto";
+import "iam.proto";
+
+option go_package = "github.com/tvttt/iam-services/pkg/proto;proto";
+
+// IAM Service với REST Gateway annotations
+service IAMGatewayService {
+  // Authentication - Xác thực
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/register"
+      body: "*"
+    };
+  }
+  
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login"
+      body: "*"
+    };
+  }
+  
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/refresh"
+      body: "*"
+    };
+  }
+  
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/logout"
+      body: "*"
+    };
+  }
+  
+  rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/verify"
+      body: "*"
+    };
+  }
+  
+  // Authorization - Phân quyền
+  rpc AssignRole(AssignRoleRequest) returns (AssignRoleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/authorization/assign-role"
+      body: "*"
+    };
+  }
+  
+  rpc RemoveRole(RemoveRoleRequest) returns (RemoveRoleResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/authorization/users/{user_id}/roles/{role_id}"
+    };
+  }
+  
+  rpc GetUserRoles(GetUserRolesRequest) returns (GetUserRolesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/authorization/users/{user_id}/roles"
+    };
+  }
+  
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/authorization/check-permission"
+      body: "*"
+    };
+  }
+  
+  // Role Management - Quản lý vai trò
+  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/roles"
+      body: "*"
+    };
+  }
+  
+  rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/roles/{role_id}"
+      body: "*"
+    };
+  }
+  
+  rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/roles/{role_id}"
+    };
+  }
+  
+  rpc GetRole(GetRoleRequest) returns (GetRoleResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/roles/{role_id}"
+    };
+  }
+  
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/roles"
+    };
+  }
+  
+  // Permission Management - Quản lý quyền
+  rpc CreatePermission(CreatePermissionRequest) returns (CreatePermissionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/permissions"
+      body: "*"
+    };
+  }
+  
+  rpc DeletePermission(DeletePermissionRequest) returns (DeletePermissionResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/permissions/{permission_id}"
+    };
+  }
+  
+  rpc ListPermissions(ListPermissionsRequest) returns (ListPermissionsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/permissions"
+    };
+  }
+  
+  // Casbin Authorization - Phân quyền theo Casbin RBAC
+  rpc CheckAPIAccess(CheckAPIAccessRequest) returns (CheckAPIAccessResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/casbin/check-api-access"
+      body: "*"
+    };
+  }
+  
+  rpc CheckCMSAccess(CheckCMSAccessRequest) returns (CheckCMSAccessResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/casbin/check-cms-access"
+      body: "*"
+    };
+  }
+  
+  rpc EnforcePolicy(EnforcePolicyRequest) returns (EnforcePolicyResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/casbin/enforce"
+      body: "*"
+    };
+  }
+  
+  // CMS Role Management - Quản lý vai trò CMS
+  rpc CreateCMSRole(CreateCMSRoleRequest) returns (CreateCMSRoleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/cms/roles"
+      body: "*"
+    };
+  }
+  
+  rpc AssignCMSRole(AssignCMSRoleRequest) returns (AssignCMSRoleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/cms/assign-role"
+      body: "*"
+    };
+  }
+  
+  rpc RemoveCMSRole(RemoveCMSRoleRequest) returns (RemoveCMSRoleResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/cms/users/{user_id}/roles/{cms_role_id}"
+    };
+  }
+  
+  rpc GetUserCMSTabs(GetUserCMSTabsRequest) returns (GetUserCMSTabsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/cms/users/{user_id}/tabs"
+    };
+  }
+  
+  rpc ListCMSRoles(ListCMSRolesRequest) returns (ListCMSRolesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/cms/roles"
+    };
+  }
+  
+  // API Resource Management - Quản lý tài nguyên API
+  rpc CreateAPIResource(CreateAPIResourceRequest) returns (CreateAPIResourceResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/resources"
+      body: "*"
+    };
+  }
+  
+  rpc ListAPIResources(ListAPIResourcesRequest) returns (ListAPIResourcesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/resources"
+    };
+  }
+}
+
