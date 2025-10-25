@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: iam-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: iam_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  iam-service:
+    build: .
+    container_name: iam-service
+    environment:
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50051
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: iam_db
+      DB_SSL_MODE: disable
+      JWT_SECRET: your-secret-key-change-this-in-production
+      JWT_EXPIRATION_HOURS: 24
+      JWT_REFRESH_EXPIRATION_HOURS: 168
+      LOG_LEVEL: info
+      LOG_ENCODING: json
+    ports:
+      - "50051:50051"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+

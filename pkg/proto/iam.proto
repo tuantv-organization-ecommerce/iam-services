@@ -1,0 +1,246 @@
+syntax = "proto3";
+
+package iam;
+
+option go_package = "github.com/tvttt/iam-services/pkg/proto;proto";
+
+// IAM Service - Quản lý xác thực và phân quyền
+service IAMService {
+  // Authentication - Xác thực
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
+  
+  // Authorization - Phân quyền
+  rpc AssignRole(AssignRoleRequest) returns (AssignRoleResponse);
+  rpc RemoveRole(RemoveRoleRequest) returns (RemoveRoleResponse);
+  rpc GetUserRoles(GetUserRolesRequest) returns (GetUserRolesResponse);
+  rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
+  
+  // Role Management - Quản lý vai trò
+  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse);
+  rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse);
+  rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse);
+  rpc GetRole(GetRoleRequest) returns (GetRoleResponse);
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse);
+  
+  // Permission Management - Quản lý quyền
+  rpc CreatePermission(CreatePermissionRequest) returns (CreatePermissionResponse);
+  rpc DeletePermission(DeletePermissionRequest) returns (DeletePermissionResponse);
+  rpc ListPermissions(ListPermissionsRequest) returns (ListPermissionsResponse);
+}
+
+// ===== Authentication Messages =====
+
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+  string full_name = 4;
+}
+
+message RegisterResponse {
+  string user_id = 1;
+  string username = 2;
+  string email = 3;
+  string message = 4;
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  string token_type = 3;
+  int64 expires_in = 4;
+  User user = 5;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  string token_type = 3;
+  int64 expires_in = 4;
+}
+
+message LogoutRequest {
+  string user_id = 1;
+  string token = 2;
+}
+
+message LogoutResponse {
+  string message = 1;
+}
+
+message VerifyTokenRequest {
+  string token = 1;
+}
+
+message VerifyTokenResponse {
+  bool valid = 1;
+  string user_id = 2;
+  repeated string roles = 3;
+  string message = 4;
+}
+
+// ===== Authorization Messages =====
+
+message AssignRoleRequest {
+  string user_id = 1;
+  string role_id = 2;
+}
+
+message AssignRoleResponse {
+  string message = 1;
+}
+
+message RemoveRoleRequest {
+  string user_id = 1;
+  string role_id = 2;
+}
+
+message RemoveRoleResponse {
+  string message = 1;
+}
+
+message GetUserRolesRequest {
+  string user_id = 1;
+}
+
+message GetUserRolesResponse {
+  repeated Role roles = 1;
+}
+
+message CheckPermissionRequest {
+  string user_id = 1;
+  string resource = 2;
+  string action = 3;
+}
+
+message CheckPermissionResponse {
+  bool allowed = 1;
+  string message = 2;
+}
+
+// ===== Role Management Messages =====
+
+message CreateRoleRequest {
+  string name = 1;
+  string description = 2;
+  repeated string permission_ids = 3;
+}
+
+message CreateRoleResponse {
+  string role_id = 1;
+  string message = 2;
+}
+
+message UpdateRoleRequest {
+  string role_id = 1;
+  string name = 2;
+  string description = 3;
+  repeated string permission_ids = 4;
+}
+
+message UpdateRoleResponse {
+  string message = 1;
+}
+
+message DeleteRoleRequest {
+  string role_id = 1;
+}
+
+message DeleteRoleResponse {
+  string message = 1;
+}
+
+message GetRoleRequest {
+  string role_id = 1;
+}
+
+message GetRoleResponse {
+  Role role = 1;
+}
+
+message ListRolesRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message ListRolesResponse {
+  repeated Role roles = 1;
+  int32 total = 2;
+}
+
+// ===== Permission Management Messages =====
+
+message CreatePermissionRequest {
+  string name = 1;
+  string resource = 2;
+  string action = 3;
+  string description = 4;
+}
+
+message CreatePermissionResponse {
+  string permission_id = 1;
+  string message = 2;
+}
+
+message DeletePermissionRequest {
+  string permission_id = 1;
+}
+
+message DeletePermissionResponse {
+  string message = 1;
+}
+
+message ListPermissionsRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message ListPermissionsResponse {
+  repeated Permission permissions = 1;
+  int32 total = 2;
+}
+
+// ===== Domain Models =====
+
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string full_name = 4;
+  bool is_active = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+message Role {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  repeated Permission permissions = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message Permission {
+  string id = 1;
+  string name = 2;
+  string resource = 3;
+  string action = 4;
+  string description = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
