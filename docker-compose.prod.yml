@@ -1,0 +1,150 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: iam-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "127.0.0.1:5432:5432"  # Only accessible from localhost
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks:
+      - iam-network-prod
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # IAM Service
+  iam-service:
+    image: ${DOCKER_USERNAME}/iam-service:latest
+    container_name: iam-service-prod
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "50051:50051"  # gRPC
+      - "8080:8080"    # HTTP Gateway
+    environment:
+      # Server Configuration
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50051
+      HTTP_HOST: 0.0.0.0
+      HTTP_PORT: 8080
+
+      # Database Configuration
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_SSL_MODE: require
+
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
+      JWT_REFRESH_EXPIRATION_HOURS: ${JWT_REFRESH_EXPIRATION_HOURS:-168}
+
+      # Casbin Configuration
+      CASBIN_MODEL_PATH: ./configs/rbac_user_model.conf
+
+      # Log Configuration
+      LOG_LEVEL: ${LOG_LEVEL:-warn}
+      LOG_ENCODING: json
+
+      # Swagger Configuration (disabled in production)
+      SWAGGER_ENABLED: "false"
+
+    networks:
+      - iam-network-prod
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=:50051"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    labels:
+      - "environment=production"
+      - "service=iam-service"
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # Nginx Reverse Proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: iam-nginx-prod
+    restart: always
+    depends_on:
+      - iam-service
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - iam-network-prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Database backup service (optional)
+  postgres-backup:
+    image: prodrigestivill/postgres-backup-local
+    container_name: iam-postgres-backup-prod
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      SCHEDULE: "@daily"
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 6
+    volumes:
+      - ./backups:/backups
+    networks:
+      - iam-network-prod
+
+networks:
+  iam-network-prod:
+    driver: bridge
+
+volumes:
+  postgres_data_prod:
+    driver: local
+  nginx_logs:
+    driver: local
+

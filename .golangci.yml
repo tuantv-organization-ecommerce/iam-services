@@ -1,0 +1,124 @@
+# GolangCI-Lint Configuration for IAM Service
+# https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  skip-dirs:
+    - bin
+    - vendor
+    - pkg/proto
+  skip-files:
+    - ".*\\.pb\\.go$"
+    - ".*\\.pb\\.gw\\.go$"
+    - ".*_grpc\\.pb\\.go$"
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  govet:
+    check-shadowing: true
+    enable-all: true
+
+  gofmt:
+    simplify: true
+
+  goimports:
+    local-prefixes: github.com/tvttt/iam-services
+
+  golint:
+    min-confidence: 0.8
+
+  gocyclo:
+    min-complexity: 15
+
+  dupl:
+    threshold: 100
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+  misspell:
+    locale: US
+
+  lll:
+    line-length: 140
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - dupImport
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+      - wrapperFunc
+
+  funlen:
+    lines: 100
+    statements: 50
+
+  gocognit:
+    min-complexity: 20
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck      # Check for unchecked errors
+    - gosimple      # Simplify code
+    - govet         # Reports suspicious constructs
+    - ineffassign   # Detects ineffectual assignments
+    - staticcheck   # Advanced Go linter
+    - typecheck     # Type-checks Go code
+    - unused        # Checks for unused code
+    - gofmt         # Checks code formatting
+    - goimports     # Checks import statements
+    - misspell      # Finds commonly misspelled words
+    - goconst       # Finds repeated strings
+    - gocritic      # Provides diagnostics
+    - gocyclo       # Computes cyclomatic complexity
+    - gosec         # Security checks
+    - dupl          # Code clone detection
+    - revive        # Fast, configurable, extensible linter
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - funlen
+        - gocognit
+
+    - path: pkg/proto/
+      linters:
+        - all
+
+    - linters:
+        - staticcheck
+      text: "SA9003:"
+
+    - linters:
+        - lll
+      source: "^//go:generate "
+
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false
+

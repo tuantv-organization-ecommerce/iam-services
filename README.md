@@ -21,9 +21,10 @@
 11. [Casbin Authorization](#-casbin-authorization-rbac)
 12. [gRPC Gateway (REST API)](#-grpc-gateway-rest-api)
 13. [Testing](#-testing)
-14. [Deployment](#-deployment)
-15. [Troubleshooting](#-troubleshooting)
-16. [Best Practices](#-best-practices)
+14. [CI/CD Pipeline](#-cicd-pipeline)
+15. [Deployment](#-deployment)
+16. [Troubleshooting](#-troubleshooting)
+17. [Best Practices](#-best-practices)
 
 ---
 
@@ -1461,6 +1462,382 @@ curl "http://localhost:8080/api/v1/roles?page=1&page_size=10"
 chmod +x scripts/test-api.sh
 ./scripts/test-api.sh
 ```
+
+---
+
+## 🔄 CI/CD Pipeline
+
+IAM Service sử dụng **GitHub Actions** để tự động hóa quy trình build, test, và deployment.
+
+### Pipeline Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                      CI/CD Pipeline Flow                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  Push/PR → Lint → Test → Build → Security Scan → Docker → Deploy   │
+│              ↓       ↓       ↓          ↓            ↓        ↓     │
+│           Passed  Passed  Passed    Passed      Pushed   Staging/   │
+│                                                          Production   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Pipeline Stages
+
+#### 1. 🔍 Lint & Code Quality
+- **Công cụ**: golangci-lint
+- **Kiểm tra**: 
+  - Code formatting (`gofmt`)
+  - Code quality và best practices
+  - Cyclomatic complexity
+  - Security issues (`gosec`)
+  - Dead code detection
+
+#### 2. 🧪 Automated Testing
+- **Unit Tests**: Test các function và method riêng lẻ
+- **Integration Tests**: Test tích hợp với database và Casbin
+- **Coverage**: Báo cáo code coverage (upload lên Codecov)
+- **Race Detection**: Phát hiện race conditions
+- **Benchmark Tests**: Đánh giá performance (chỉ chạy khi PR)
+
+#### 3. 🏗️ Build Application
+- **Binary Build**: Compile Go binary cho Linux/AMD64
+- **Optimization**: Strip symbols (`-ldflags="-w -s"`)
+- **Artifact**: Upload binary để reuse trong các stage sau
+
+#### 4. 🔒 Security Scan
+- **Trivy**: Scan vulnerabilities trong dependencies và filesystem
+- **Gosec**: Scan security issues trong Go code
+- **SARIF Report**: Upload kết quả lên GitHub Security tab
+
+#### 5. 🐳 Docker Build & Push
+- **Trigger**: Chỉ chạy khi push lên `main` hoặc `develop`
+- **Multi-stage Build**: Tối ưu image size
+- **Registry**: Push lên Docker Hub
+- **Tags**: 
+  - `latest` (từ main)
+  - `develop` (từ develop)
+  - `<branch>-<sha>` (commit-specific)
+- **Cache**: Sử dụng registry cache để tăng tốc build
+
+#### 6. 🚀 Deployment
+- **Staging**: Auto-deploy khi push lên `develop`
+  - Environment: `staging`
+  - URL: `https://iam-staging.example.com`
+- **Production**: Auto-deploy khi push lên `main`
+  - Environment: `production`
+  - URL: `https://iam.example.com`
+  - Create GitHub Release với version tag
+- **Health Check**: Verify service sau khi deploy
+
+#### 7. 📢 Notification
+- **Slack**: Thông báo kết quả deployment
+- **Status**: Success/Failure với chi tiết commit
+
+---
+
+### GitHub Workflows
+
+#### Main CI/CD Pipeline
+**File**: `.github/workflows/ci-cd.yml`
+
+**Triggers**:
+```yaml
+on:
+  push:
+    branches: [main, develop, feature/**, hotfix/**]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+```
+
+**Jobs**:
+1. `lint` - Code quality checks
+2. `test` - Unit tests với PostgreSQL service
+3. `build` - Build binary artifact
+4. `security` - Security scanning
+5. `docker` - Build & push Docker image
+6. `deploy-staging` - Deploy to staging (develop only)
+7. `deploy-production` - Deploy to production (main only)
+8. `notify` - Send notifications
+
+#### Automated Testing
+**File**: `.github/workflows/test.yml`
+
+**Triggers**:
+```yaml
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+```
+
+**Jobs**:
+1. `unit-tests` - Unit tests với coverage report
+2. `integration-tests` - Integration tests
+3. `benchmark-tests` - Performance benchmarks (PR only)
+
+---
+
+### Setup CI/CD
+
+#### 1. GitHub Secrets
+
+Cấu hình các secrets trong GitHub Repository Settings:
+
+```bash
+# Docker Hub
+DOCKER_USERNAME=your-docker-username
+DOCKER_PASSWORD=your-docker-password
+
+# Staging Server
+STAGING_HOST=staging.example.com
+STAGING_USER=deploy
+STAGING_SSH_KEY=<private-ssh-key>
+
+# Production Server
+PRODUCTION_HOST=production.example.com
+PRODUCTION_USER=deploy
+PRODUCTION_SSH_KEY=<private-ssh-key>
+
+# Notifications
+SLACK_WEBHOOK=https://hooks.slack.com/services/...
+```
+
+#### 2. Server Setup
+
+**Cài đặt trên Staging/Production servers**:
+```bash
+# Install Docker & Docker Compose
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+
+# Create deployment directory
+mkdir -p /app/iam-service
+cd /app/iam-service
+
+# Setup docker-compose files
+# - docker-compose.staging.yml
+# - docker-compose.prod.yml
+```
+
+#### 3. Database Migrations
+
+**Tự động chạy migrations**:
+```yaml
+# docker-compose.prod.yml
+services:
+  iam-service:
+    image: your-username/iam-service:latest
+    depends_on:
+      - postgres
+    environment:
+      - DB_HOST=postgres
+      - DB_NAME=iam_db
+      # ... other env vars
+    command: |
+      sh -c "
+        /app/iam-service migrate up &&
+        /app/iam-service
+      "
+```
+
+#### 4. Environment Variables
+
+**Quản lý env vars**:
+- Development: `.env` file (gitignored)
+- Staging/Production: Docker secrets hoặc external config management (Vault, AWS Secrets Manager)
+
+---
+
+### Branch Strategy
+
+```
+main (production)
+  ↑
+  └─ develop (staging)
+       ↑
+       ├─ feature/user-authentication
+       ├─ feature/casbin-integration
+       └─ hotfix/critical-bug
+```
+
+**Workflow**:
+1. **Feature Development**: 
+   - Branch từ `develop`: `feature/feature-name`
+   - Push → CI runs (lint, test, build, security)
+   - Create PR to `develop` → Full pipeline runs
+   - Merge → Auto-deploy to staging
+
+2. **Release to Production**:
+   - Create PR từ `develop` → `main`
+   - Merge → Auto-deploy to production
+   - GitHub Release được tạo tự động
+
+3. **Hotfix**:
+   - Branch từ `main`: `hotfix/issue-name`
+   - Create PR to `main` → Deploy to production
+   - Merge back to `develop`
+
+---
+
+### Monitoring CI/CD
+
+#### GitHub Actions
+- **Workflow Runs**: Repository → Actions tab
+- **Build History**: Xem lịch sử và logs của mỗi run
+- **Artifacts**: Download build artifacts (binaries, coverage reports)
+
+#### Code Coverage
+- **Codecov**: https://codecov.io/gh/your-org/iam-services
+- **Trend**: Theo dõi coverage trend qua commits
+
+#### Security
+- **GitHub Security**: Repository → Security tab
+- **Dependabot**: Auto PR để update vulnerable dependencies
+- **Code Scanning**: Trivy và Gosec results
+
+#### Docker Registry
+- **Docker Hub**: https://hub.docker.com/r/your-username/iam-service
+- **Image Tags**: Xem các version đã build
+- **Image Size**: Monitor image size optimization
+
+---
+
+### Performance Optimization
+
+#### Cache Strategy
+```yaml
+# Go modules cache
+- uses: actions/setup-go@v4
+  with:
+    cache: true  # Cache go modules
+
+# Docker layer cache
+- uses: docker/build-push-action@v5
+  with:
+    cache-from: type=registry,ref=...
+    cache-to: type=registry,ref=...
+```
+
+#### Parallel Jobs
+- Lint và Security scan chạy song song
+- Test chạy độc lập với Build
+- Deploy jobs chỉ chạy khi cần
+
+#### Smart Triggers
+- PR: Chạy tất cả checks
+- Push to feature branches: Chỉ lint + test
+- Push to main/develop: Full pipeline + deploy
+
+---
+
+### Troubleshooting CI/CD
+
+#### Build Fails
+
+**Check logs**:
+```bash
+# Go to Actions tab → Click failed workflow → View logs
+```
+
+**Common issues**:
+- Go module conflicts: `go mod tidy`
+- Test failures: Check PostgreSQL service connectivity
+- Docker build: Check Dockerfile syntax
+
+#### Deployment Fails
+
+**SSH connection issues**:
+```bash
+# Verify SSH key in GitHub Secrets
+# Test SSH connection manually
+ssh -i private-key deploy@production.example.com
+```
+
+**Docker pull fails**:
+```bash
+# Check Docker Hub credentials
+# Verify image exists: docker pull username/iam-service:latest
+```
+
+**Health check fails**:
+```bash
+# Check service logs on server
+docker-compose logs iam-service
+
+# Verify environment variables
+docker-compose config
+```
+
+---
+
+### Local CI Testing
+
+**Sử dụng Act để test workflows locally**:
+```bash
+# Install Act
+brew install act  # macOS
+# or download from https://github.com/nektos/act
+
+# Run CI workflow locally
+act -j lint
+act -j test
+act -j build
+
+# Run entire workflow
+act push
+```
+
+**Docker Compose cho local testing**:
+```bash
+# Build và test local
+docker-compose -f docker-compose.local.yml up --build
+
+# Verify health
+curl http://localhost:8080/health
+```
+
+---
+
+### Best Practices
+
+#### 1. Commit Messages
+```bash
+# Format: <type>(<scope>): <subject>
+git commit -m "feat(auth): add JWT refresh token support"
+git commit -m "fix(casbin): resolve policy loading issue"
+git commit -m "docs(readme): update CI/CD section"
+```
+
+**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+
+#### 2. Pull Request
+- **Title**: Clear và descriptive
+- **Description**: Explain what, why, how
+- **Labels**: `feature`, `bugfix`, `documentation`, `enhancement`
+- **Review**: Request review từ team members
+
+#### 3. Testing
+- Viết tests cho mọi feature mới
+- Maintain coverage > 80%
+- Test cả success và error cases
+- Add integration tests cho critical flows
+
+#### 4. Security
+- Never commit secrets hoặc passwords
+- Use GitHub Secrets cho sensitive data
+- Scan images trước khi deploy
+- Review security alerts promptly
+
+#### 5. Versioning
+- Use semantic versioning: `v1.2.3`
+- Tag releases: `git tag v1.2.3`
+- Document breaking changes trong release notes
 
 ---
 

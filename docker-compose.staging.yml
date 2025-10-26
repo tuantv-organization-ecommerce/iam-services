@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: iam-postgres-staging
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-iam_db_staging}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_staging:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    networks:
+      - iam-network-staging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # IAM Service
+  iam-service:
+    image: ${DOCKER_USERNAME:-yourusername}/iam-service:develop
+    container_name: iam-service-staging
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "50051:50051"  # gRPC
+      - "8080:8080"    # HTTP Gateway
+    environment:
+      # Server Configuration
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 50051
+      HTTP_HOST: 0.0.0.0
+      HTTP_PORT: 8080
+
+      # Database Configuration
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-iam_db_staging}
+      DB_SSL_MODE: disable
+
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_HOURS: 24
+      JWT_REFRESH_EXPIRATION_HOURS: 168
+
+      # Casbin Configuration
+      CASBIN_MODEL_PATH: ./configs/rbac_user_model.conf
+
+      # Log Configuration
+      LOG_LEVEL: info
+      LOG_ENCODING: json
+
+      # Swagger Configuration
+      SWAGGER_ENABLED: "true"
+      SWAGGER_BASE_PATH: /swagger/
+      SWAGGER_SPEC_PATH: /swagger.json
+      SWAGGER_TITLE: "IAM Service API - Staging"
+
+    networks:
+      - iam-network-staging
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=:50051"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "environment=staging"
+      - "service=iam-service"
+
+networks:
+  iam-network-staging:
+    driver: bridge
+
+volumes:
+  postgres_data_staging:
+    driver: local
+
