@@ -129,7 +129,7 @@ Sau khi chạy script, bạn sẽ có:
 
 ```
 pkg/proto/
-├── iam.pb.go                      # gRPC message types
+├── iam.pb.go                     # gRPC message types
 ├── iam_grpc.pb.go                # gRPC service
 ├── iam_gateway.pb.go             # Gateway message types
 ├── iam_gateway.pb.gw.go          # Gateway handlers ✅

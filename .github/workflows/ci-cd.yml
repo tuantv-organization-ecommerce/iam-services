@@ -37,6 +37,13 @@ jobs:
             echo "SERVICE_DIR=." >> $GITHUB_ENV
           fi
 
+      - name: Auth for private Go modules
+        run: |
+          go env -w GOPRIVATE=github.com/tvttt/*
+          go env -w GONOPROXY=github.com/tvttt/*
+          go env -w GONOSUMDB=github.com/tvttt/*
+          git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -47,6 +54,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
+
+      - name: Normalize gokits dependency (CI)
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          if [ -d ../gokits ] || [ -d ../../back_end/gokits ] || [ -d ../../gokits ]; then
+            echo "Local gokits found - keep replace"
+          else
+            echo "Local gokits not found - switching to remote module"
+            go mod edit -dropreplace github.com/tvttt/gokits || true
+            go get github.com/tvttt/gokits@latest
+          fi
 
       - name: Download dependencies
         working-directory: ${{ env.SERVICE_DIR }}
@@ -108,11 +126,29 @@ jobs:
             echo "SERVICE_DIR=." >> $GITHUB_ENV
           fi
 
+      - name: Auth for private Go modules
+        run: |
+          go env -w GOPRIVATE=github.com/tvttt/*
+          go env -w GONOPROXY=github.com/tvttt/*
+          go env -w GONOSUMDB=github.com/tvttt/*
+          git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
+
+      - name: Normalize gokits dependency (CI)
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          if [ -d ../gokits ] || [ -d ../../back_end/gokits ] || [ -d ../../gokits ]; then
+            echo "Local gokits found - keep replace"
+          else
+            echo "Local gokits not found - switching to remote module"
+            go mod edit -dropreplace github.com/tvttt/gokits || true
+            go get github.com/tvttt/gokits@latest
+          fi
 
       - name: Download dependencies
         working-directory: ${{ env.SERVICE_DIR }}
@@ -180,11 +216,29 @@ jobs:
             echo "SERVICE_DIR=." >> $GITHUB_ENV
           fi
 
+      - name: Auth for private Go modules
+        run: |
+          go env -w GOPRIVATE=github.com/tvttt/*
+          go env -w GONOPROXY=github.com/tvttt/*
+          go env -w GONOSUMDB=github.com/tvttt/*
+          git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
+
+      - name: Normalize gokits dependency (CI)
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          if [ -d ../gokits ] || [ -d ../../back_end/gokits ] || [ -d ../../gokits ]; then
+            echo "Local gokits found - keep replace"
+          else
+            echo "Local gokits not found - switching to remote module"
+            go mod edit -dropreplace github.com/tvttt/gokits || true
+            go get github.com/tvttt/gokits@latest
+          fi
 
       - name: Download dependencies
         working-directory: ${{ env.SERVICE_DIR }}
