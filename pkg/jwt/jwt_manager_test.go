@@ -16,7 +16,7 @@ func TestNewJWTManager(t *testing.T) {
 	manager := NewJWTManager(secret, accessDuration, refreshDuration)
 
 	assert.NotNil(t, manager)
-	assert.Equal(t, secret, manager.Secret)
+	assert.Equal(t, secret, manager.SecretKey)
 	assert.Equal(t, accessDuration, manager.AccessTokenDuration)
 	assert.Equal(t, refreshDuration, manager.RefreshTokenDuration)
 }
