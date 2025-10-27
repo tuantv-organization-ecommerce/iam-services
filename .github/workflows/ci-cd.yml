@@ -44,10 +44,10 @@ jobs:
           go env -w GONOSUMDB=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
           git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
 
-      - name: Setup Go
+      - name: Setup Go (lint uses Go 1.23)
         uses: actions/setup-go@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version: '1.23'
           cache: true
 
       - name: Install PostgreSQL client
@@ -71,18 +71,12 @@ jobs:
           go mod download
           go mod tidy
 
-      - name: Force local Go toolchain
-        run: |
-          go env -w GOTOOLCHAIN=local
-
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
           working-directory: ${{ env.SERVICE_DIR }}
           args: --timeout=5m
-        env:
-          GOTOOLCHAIN: local
 
       - name: Check code formatting
         working-directory: ${{ env.SERVICE_DIR }}
