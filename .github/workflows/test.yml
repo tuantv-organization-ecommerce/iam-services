@@ -50,9 +50,9 @@ jobs:
 
       - name: Auth for private Go modules
         run: |
-          go env -w GOPRIVATE=github.com/tvttt/*
-          go env -w GONOPROXY=github.com/tvttt/*
-          go env -w GONOSUMDB=github.com/tvttt/*
+          go env -w GOPRIVATE=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOPROXY=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOSUMDB=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
           git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
 
       - name: Setup Go
@@ -73,8 +73,7 @@ jobs:
             echo "Local gokits found - keep replace"
           else
             echo "Local gokits not found - switching to remote module"
-            go mod edit -dropreplace github.com/tvttt/gokits || true
-            go get github.com/tvttt/gokits@latest
+            go mod edit -replace github.com/tvttt/gokits=github.com/tuantv-organization-ecommerce/gokits@latest
           fi
 
       - name: Download dependencies
@@ -155,9 +154,9 @@ jobs:
 
       - name: Auth for private Go modules
         run: |
-          go env -w GOPRIVATE=github.com/tvttt/*
-          go env -w GONOPROXY=github.com/tvttt/*
-          go env -w GONOSUMDB=github.com/tvttt/*
+          go env -w GOPRIVATE=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOPROXY=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOSUMDB=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
           git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
 
       - name: Setup Go
@@ -178,8 +177,7 @@ jobs:
             echo "Local gokits found - keep replace"
           else
             echo "Local gokits not found - switching to remote module"
-            go mod edit -dropreplace github.com/tvttt/gokits || true
-            go get github.com/tvttt/gokits@latest
+            go mod edit -replace github.com/tvttt/gokits=github.com/tuantv-organization-ecommerce/gokits@latest
           fi
 
       - name: Download dependencies
@@ -249,9 +247,9 @@ jobs:
 
       - name: Auth for private Go modules
         run: |
-          go env -w GOPRIVATE=github.com/tvttt/*
-          go env -w GONOPROXY=github.com/tvttt/*
-          go env -w GONOSUMDB=github.com/tvttt/*
+          go env -w GOPRIVATE=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOPROXY=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOSUMDB=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
           git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
 
       - name: Setup Go
@@ -272,8 +270,7 @@ jobs:
             echo "Local gokits found - keep replace"
           else
             echo "Local gokits not found - switching to remote module"
-            go mod edit -dropreplace github.com/tvttt/gokits || true
-            go get github.com/tvttt/gokits@latest
+            go mod edit -replace github.com/tvttt/gokits=github.com/tuantv-organization-ecommerce/gokits@latest
           fi
 
       - name: Download dependencies
