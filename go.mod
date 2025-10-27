@@ -9,6 +9,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
+	github.com/stretchr/testify v1.8.4
 	github.com/tvttt/gokits v0.0.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.40.0

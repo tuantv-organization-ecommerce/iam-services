@@ -61,6 +61,8 @@ jobs:
           psql -h localhost -U postgres -d iam_db_test -f migrations/002_seed_data.sql
           psql -h localhost -U postgres -d iam_db_test -f migrations/003_casbin_tables.sql
           psql -h localhost -U postgres -d iam_db_test -f migrations/004_casbin_seed_data.sql
+          psql -h localhost -U postgres -d iam_db_test -f migrations/005_separate_user_cms_authorization.sql
+          psql -h localhost -U postgres -d iam_db_test -f migrations/006_seed_separated_authorization.sql
 
       - name: Run unit tests
         working-directory: ecommerce/back_end/iam-services
@@ -133,6 +135,8 @@ jobs:
           psql -h localhost -U postgres -d iam_db_test -f migrations/002_seed_data.sql
           psql -h localhost -U postgres -d iam_db_test -f migrations/003_casbin_tables.sql
           psql -h localhost -U postgres -d iam_db_test -f migrations/004_casbin_seed_data.sql
+          psql -h localhost -U postgres -d iam_db_test -f migrations/005_separate_user_cms_authorization.sql
+          psql -h localhost -U postgres -d iam_db_test -f migrations/006_seed_separated_authorization.sql
 
       - name: Run integration tests
         working-directory: ecommerce/back_end/iam-services
@@ -194,6 +198,8 @@ jobs:
           psql -h localhost -U postgres -d iam_db_test -f migrations/002_seed_data.sql
           psql -h localhost -U postgres -d iam_db_test -f migrations/003_casbin_tables.sql
           psql -h localhost -U postgres -d iam_db_test -f migrations/004_casbin_seed_data.sql
+          psql -h localhost -U postgres -d iam_db_test -f migrations/005_separate_user_cms_authorization.sql
+          psql -h localhost -U postgres -d iam_db_test -f migrations/006_seed_separated_authorization.sql
 
       - name: Run benchmark tests
         working-directory: ecommerce/back_end/iam-services
