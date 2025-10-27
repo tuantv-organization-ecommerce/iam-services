@@ -29,6 +29,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set service directory
+        run: |
+          if [ -d "ecommerce/back_end/iam-services" ]; then
+            echo "SERVICE_DIR=ecommerce/back_end/iam-services" >> $GITHUB_ENV
+          else
+            echo "SERVICE_DIR=." >> $GITHUB_ENV
+          fi
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -41,7 +49,7 @@ jobs:
           sudo apt-get install -y postgresql-client
 
       - name: Download dependencies
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           go mod download
           go mod tidy
@@ -50,11 +58,11 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
-          working-directory: ecommerce/back_end/iam-services
+          working-directory: ${{ env.SERVICE_DIR }}
           args: --timeout=5m
 
       - name: Check code formatting
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
             echo "Code is not formatted. Run 'make fmt'"
@@ -63,7 +71,7 @@ jobs:
           fi
 
       - name: Run go vet
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: go vet ./...
 
   # ============================================
@@ -92,6 +100,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set service directory
+        run: |
+          if [ -d "ecommerce/back_end/iam-services" ]; then
+            echo "SERVICE_DIR=ecommerce/back_end/iam-services" >> $GITHUB_ENV
+          else
+            echo "SERVICE_DIR=." >> $GITHUB_ENV
+          fi
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -99,7 +115,7 @@ jobs:
           cache: true
 
       - name: Download dependencies
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           go mod download
           go mod tidy
@@ -112,7 +128,7 @@ jobs:
           done
 
       - name: Run database migrations
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         env:
           PGPASSWORD: postgres
         run: |
@@ -124,7 +140,7 @@ jobs:
           psql -h localhost -U postgres -d iam_db_test -f migrations/006_seed_separated_authorization.sql
 
       - name: Run tests with coverage
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -139,7 +155,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          file: ./ecommerce/back_end/iam-services/coverage.out
+          file: ./${{ env.SERVICE_DIR }}/coverage.out
           flags: unittests
           name: codecov-iam-service
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -156,6 +172,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set service directory
+        run: |
+          if [ -d "ecommerce/back_end/iam-services" ]; then
+            echo "SERVICE_DIR=ecommerce/back_end/iam-services" >> $GITHUB_ENV
+          else
+            echo "SERVICE_DIR=." >> $GITHUB_ENV
+          fi
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -163,21 +187,21 @@ jobs:
           cache: true
 
       - name: Download dependencies
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           go mod download
           go mod tidy
 
       - name: Build binary
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags="-w -s" -o bin/iam-service cmd/server/main.go
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: iam-service-binary
-          path: ecommerce/back_end/iam-services/bin/iam-service
+          path: ${{ env.SERVICE_DIR }}/bin/iam-service
           retention-days: 7
 
   # ============================================
