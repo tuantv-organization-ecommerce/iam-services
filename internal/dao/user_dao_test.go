@@ -11,6 +11,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tvttt/iam-services/internal/domain"
 )
 
 // getTestDB returns a test database connection
@@ -51,10 +52,10 @@ func TestUserDAO_Create_Success(t *testing.T) {
 	db := getTestDB(t)
 	defer db.Close()
 
-	dao := NewUserDAO(db)
+	userDAO := NewUserDAO(db)
 	ctx := context.Background()
 
-	user := &User{
+	user := &domain.User{
 		ID:           uuid.New().String(),
 		Username:     "testuser_" + uuid.New().String()[:8],
 		Email:        "test_" + uuid.New().String()[:8] + "@example.com",
@@ -65,22 +66,22 @@ func TestUserDAO_Create_Success(t *testing.T) {
 		UpdatedAt:    time.Now(),
 	}
 
-	err := dao.Create(ctx, user)
+	err := userDAO.Create(ctx, user)
 	require.NoError(t, err)
 
 	// Cleanup
 	_, _ = db.Exec("DELETE FROM users WHERE id = $1", user.ID)
 }
 
-func TestUserDAO_GetByID_Success(t *testing.T) {
+func TestUserDAO_FindByID_Success(t *testing.T) {
 	db := getTestDB(t)
 	defer db.Close()
 
-	dao := NewUserDAO(db)
+	userDAO := NewUserDAO(db)
 	ctx := context.Background()
 
 	// Create test user
-	user := &User{
+	user := &domain.User{
 		ID:           uuid.New().String(),
 		Username:     "testuser_" + uuid.New().String()[:8],
 		Email:        "test_" + uuid.New().String()[:8] + "@example.com",
@@ -91,12 +92,13 @@ func TestUserDAO_GetByID_Success(t *testing.T) {
 		UpdatedAt:    time.Now(),
 	}
 
-	err := dao.Create(ctx, user)
+	err := userDAO.Create(ctx, user)
 	require.NoError(t, err)
 
 	// Get by ID
-	retrieved, err := dao.GetByID(ctx, user.ID)
+	retrieved, err := userDAO.FindByID(ctx, user.ID)
 	require.NoError(t, err)
+	require.NotNil(t, retrieved)
 	assert.Equal(t, user.ID, retrieved.ID)
 	assert.Equal(t, user.Username, retrieved.Username)
 	assert.Equal(t, user.Email, retrieved.Email)
@@ -105,15 +107,15 @@ func TestUserDAO_GetByID_Success(t *testing.T) {
 	_, _ = db.Exec("DELETE FROM users WHERE id = $1", user.ID)
 }
 
-func TestUserDAO_GetByUsername_Success(t *testing.T) {
+func TestUserDAO_FindByUsername_Success(t *testing.T) {
 	db := getTestDB(t)
 	defer db.Close()
 
-	dao := NewUserDAO(db)
+	userDAO := NewUserDAO(db)
 	ctx := context.Background()
 
 	// Create test user
-	user := &User{
+	user := &domain.User{
 		ID:           uuid.New().String(),
 		Username:     "testuser_" + uuid.New().String()[:8],
 		Email:        "test_" + uuid.New().String()[:8] + "@example.com",
@@ -124,12 +126,13 @@ func TestUserDAO_GetByUsername_Success(t *testing.T) {
 		UpdatedAt:    time.Now(),
 	}
 
-	err := dao.Create(ctx, user)
+	err := userDAO.Create(ctx, user)
 	require.NoError(t, err)
 
 	// Get by username
-	retrieved, err := dao.GetByUsername(ctx, user.Username)
+	retrieved, err := userDAO.FindByUsername(ctx, user.Username)
 	require.NoError(t, err)
+	require.NotNil(t, retrieved)
 	assert.Equal(t, user.ID, retrieved.ID)
 	assert.Equal(t, user.Username, retrieved.Username)
 
@@ -137,15 +140,15 @@ func TestUserDAO_GetByUsername_Success(t *testing.T) {
 	_, _ = db.Exec("DELETE FROM users WHERE id = $1", user.ID)
 }
 
-func TestUserDAO_GetByEmail_Success(t *testing.T) {
+func TestUserDAO_FindByEmail_Success(t *testing.T) {
 	db := getTestDB(t)
 	defer db.Close()
 
-	dao := NewUserDAO(db)
+	userDAO := NewUserDAO(db)
 	ctx := context.Background()
 
 	// Create test user
-	user := &User{
+	user := &domain.User{
 		ID:           uuid.New().String(),
 		Username:     "testuser_" + uuid.New().String()[:8],
 		Email:        "test_" + uuid.New().String()[:8] + "@example.com",
@@ -156,12 +159,13 @@ func TestUserDAO_GetByEmail_Success(t *testing.T) {
 		UpdatedAt:    time.Now(),
 	}
 
-	err := dao.Create(ctx, user)
+	err := userDAO.Create(ctx, user)
 	require.NoError(t, err)
 
 	// Get by email
-	retrieved, err := dao.GetByEmail(ctx, user.Email)
+	retrieved, err := userDAO.FindByEmail(ctx, user.Email)
 	require.NoError(t, err)
+	require.NotNil(t, retrieved)
 	assert.Equal(t, user.ID, retrieved.ID)
 	assert.Equal(t, user.Email, retrieved.Email)
 
@@ -173,11 +177,11 @@ func TestUserDAO_Update_Success(t *testing.T) {
 	db := getTestDB(t)
 	defer db.Close()
 
-	dao := NewUserDAO(db)
+	userDAO := NewUserDAO(db)
 	ctx := context.Background()
 
 	// Create test user
-	user := &User{
+	user := &domain.User{
 		ID:           uuid.New().String(),
 		Username:     "testuser_" + uuid.New().String()[:8],
 		Email:        "test_" + uuid.New().String()[:8] + "@example.com",
@@ -188,7 +192,7 @@ func TestUserDAO_Update_Success(t *testing.T) {
 		UpdatedAt:    time.Now(),
 	}
 
-	err := dao.Create(ctx, user)
+	err := userDAO.Create(ctx, user)
 	require.NoError(t, err)
 
 	// Update user
@@ -196,12 +200,13 @@ func TestUserDAO_Update_Success(t *testing.T) {
 	user.IsActive = false
 	user.UpdatedAt = time.Now()
 
-	err = dao.Update(ctx, user)
+	err = userDAO.Update(ctx, user)
 	require.NoError(t, err)
 
 	// Verify update
-	retrieved, err := dao.GetByID(ctx, user.ID)
+	retrieved, err := userDAO.FindByID(ctx, user.ID)
 	require.NoError(t, err)
+	require.NotNil(t, retrieved)
 	assert.Equal(t, "Updated Name", retrieved.FullName)
 	assert.False(t, retrieved.IsActive)
 
@@ -209,29 +214,29 @@ func TestUserDAO_Update_Success(t *testing.T) {
 	_, _ = db.Exec("DELETE FROM users WHERE id = $1", user.ID)
 }
 
-func TestUserDAO_GetByID_NotFound(t *testing.T) {
+func TestUserDAO_FindByID_NotFound(t *testing.T) {
 	db := getTestDB(t)
 	defer db.Close()
 
-	dao := NewUserDAO(db)
+	userDAO := NewUserDAO(db)
 	ctx := context.Background()
 
 	nonExistentID := uuid.New().String()
 
-	_, err := dao.GetByID(ctx, nonExistentID)
-	assert.Error(t, err)
-	assert.Equal(t, sql.ErrNoRows, err)
+	result, err := userDAO.FindByID(ctx, nonExistentID)
+	require.NoError(t, err)
+	assert.Nil(t, result)
 }
 
 func TestUserDAO_Delete_Success(t *testing.T) {
 	db := getTestDB(t)
 	defer db.Close()
 
-	dao := NewUserDAO(db)
+	userDAO := NewUserDAO(db)
 	ctx := context.Background()
 
 	// Create test user
-	user := &User{
+	user := &domain.User{
 		ID:           uuid.New().String(),
 		Username:     "testuser_" + uuid.New().String()[:8],
 		Email:        "test_" + uuid.New().String()[:8] + "@example.com",
@@ -242,15 +247,15 @@ func TestUserDAO_Delete_Success(t *testing.T) {
 		UpdatedAt:    time.Now(),
 	}
 
-	err := dao.Create(ctx, user)
+	err := userDAO.Create(ctx, user)
 	require.NoError(t, err)
 
 	// Delete user
-	err = dao.Delete(ctx, user.ID)
+	err = userDAO.Delete(ctx, user.ID)
 	require.NoError(t, err)
 
 	// Verify deletion
-	_, err = dao.GetByID(ctx, user.ID)
-	assert.Error(t, err)
-	assert.Equal(t, sql.ErrNoRows, err)
+	result, err := userDAO.FindByID(ctx, user.ID)
+	require.NoError(t, err)
+	assert.Nil(t, result)
 }

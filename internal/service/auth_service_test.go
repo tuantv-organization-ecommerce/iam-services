@@ -57,9 +57,9 @@ func (m *MockUserRepository) DeleteUser(ctx context.Context, id string) error {
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) ListUsers(ctx context.Context, page, pageSize int) ([]*domain.User, int, error) {
-	args := m.Called(ctx, page, pageSize)
-	return args.Get(0).([]*domain.User), args.Int(1), args.Error(2)
+func (m *MockUserRepository) UserExists(ctx context.Context, username, email string) (bool, error) {
+	args := m.Called(ctx, username, email)
+	return args.Bool(0), args.Error(1)
 }
 
 // Mock AuthorizationRepository
@@ -93,9 +93,32 @@ func (m *MockAuthorizationRepository) GetUserPermissions(ctx context.Context, us
 	return args.Get(0).([]*domain.Permission), args.Error(1)
 }
 
-func (m *MockAuthorizationRepository) CheckUserPermission(ctx context.Context, userID, resource, action string) (bool, error) {
+func (m *MockAuthorizationRepository) UserHasPermission(ctx context.Context, userID, resource, action string) (bool, error) {
 	args := m.Called(ctx, userID, resource, action)
 	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockAuthorizationRepository) AssignPermissionToRole(ctx context.Context, roleID, permissionID string) error {
+	args := m.Called(ctx, roleID, permissionID)
+	return args.Error(0)
+}
+
+func (m *MockAuthorizationRepository) RemovePermissionFromRole(ctx context.Context, roleID, permissionID string) error {
+	args := m.Called(ctx, roleID, permissionID)
+	return args.Error(0)
+}
+
+func (m *MockAuthorizationRepository) GetRolePermissions(ctx context.Context, roleID string) ([]*domain.Permission, error) {
+	args := m.Called(ctx, roleID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Permission), args.Error(1)
+}
+
+func (m *MockAuthorizationRepository) UpdateRolePermissions(ctx context.Context, roleID string, permissionIDs []string) error {
+	args := m.Called(ctx, roleID, permissionIDs)
+	return args.Error(0)
 }
 
 func TestRegister_Success(t *testing.T) {
