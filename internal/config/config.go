@@ -59,8 +59,10 @@ type SwaggerConfig struct {
 
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
-	// Try to load .env file (ignore error if not found)
-	_ = godotenv.Load()
+	// Try to load .env file (optional)
+	if err := godotenv.Load(); err != nil {
+		// Optional: ignore missing .env or other load errors in production/CI
+	}
 
 	config := &Config{
 		Server: ServerConfig{
