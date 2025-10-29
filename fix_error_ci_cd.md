@@ -491,5 +491,98 @@ type Permission struct { ... }
 
 ---
 
+## 14) Linting Setup & Local Development
+
+### 📦 Setup Files Created
+
+**1. `.golangci.yml` - Lint Configuration**
+- Enabled linters: revive, errcheck, gosec, goconst, gofmt, goimports, misspell, staticcheck
+- Settings for each linter (e.g., exclude G115 for manual overflow handling)
+
+**2. `scripts/lint.ps1` - Lint Script**
+```powershell
+# Usage:
+.\scripts\lint.ps1              # Lint all
+.\scripts\lint.ps1 -Fix         # Auto-fix
+.\scripts\lint.ps1 -Fast        # Fast mode
+.\scripts\lint.ps1 -Target model # Specific package
+```
+
+**3. `scripts/check-all.ps1` - Pre-Push Check**
+```powershell
+# Run: .\scripts\check-all.ps1
+# Checks: Lint + Build + Test
+```
+
+**4. `Makefile` - Make Commands**
+```bash
+make lint           # Run golangci-lint
+make lint-fix       # Run with auto-fix
+make lint-fast      # Fast mode
+make check-all      # Lint + Build + Test
+```
+
+**5. `LINTING_SETUP.md` - Detailed Guide**
+- Installation instructions
+- Usage examples
+- Troubleshooting
+- Workflow recommendations
+
+### 🚀 Quick Start
+
+**Install golangci-lint:**
+```powershell
+# Cách 1: Script tự động (khuyến nghị - tránh lỗi go install)
+.\scripts\install-golangci-lint.ps1 -Version "v1.54.2"
+
+# Cách 2: go install (có thể fail với Go 1.19)
+# Go 1.19: Dùng v1.54.2
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.2
+
+# Go 1.20+: Có thể dùng v1.55.2
+# go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2
+
+golangci-lint version  # Verify installation
+```
+
+**Run Lint:**
+```powershell
+# Recommended workflow before push
+.\scripts\check-all.ps1
+
+# Or individually
+.\scripts\lint.ps1
+go build ./...
+go test ./...
+```
+
+**See:** `LINTING_SETUP.md` for complete guide
+
+### 🔧 Common Installation Issues
+
+**Issue 1: "module requires Go 1.20" when using go install**
+```powershell
+# Solution: Use binary download script instead
+.\scripts\install-golangci-lint.ps1 -Version "v1.54.2"
+```
+
+**Issue 2: "go.work file requires go >= 1.21"**
+```powershell
+# Fix go.mod version requirement
+(Get-Content go.mod) -replace 'go 1\.21', 'go 1.19' | Set-Content go.mod
+```
+
+**Issue 3: "golangci-lint not found" after installation**
+```powershell
+# Add to PATH for current session
+$env:PATH += ";E:\go\src\bin"  # Adjust based on your GOPATH
+
+# Or add permanently to system PATH
+# System Properties > Environment Variables > Path > Add: E:\go\src\bin
+```
+
+---
+
 ## Liên hệ
 - Nếu vẫn lỗi, đính kèm log step fail (trước và sau fix) để truy vết nhanh.
+- Xem `LINTING_SETUP.md` cho troubleshooting chi tiết về linting.
