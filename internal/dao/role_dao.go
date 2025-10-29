@@ -99,7 +99,7 @@ func (d *roleDAO) List(ctx context.Context, limit, offset int) ([]*domain.Role, 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var roles []*domain.Role
 	for rows.Next() {

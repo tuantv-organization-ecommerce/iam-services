@@ -58,7 +58,7 @@ func (d *rolePermissionDAO) GetRolePermissions(ctx context.Context, roleID strin
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var permissions []*domain.Permission
 	for rows.Next() {
@@ -92,7 +92,7 @@ func (d *rolePermissionDAO) GetPermissionRoles(ctx context.Context, permissionID
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var roles []*domain.Role
 	for rows.Next() {

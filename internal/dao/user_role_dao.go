@@ -57,7 +57,7 @@ func (d *userRoleDAO) GetUserRoles(ctx context.Context, userID string) ([]*domai
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var roles []*domain.Role
 	for rows.Next() {
@@ -90,7 +90,7 @@ func (d *userRoleDAO) GetRoleUsers(ctx context.Context, roleID string) ([]*domai
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var users []*domain.User
 	for rows.Next() {

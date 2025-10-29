@@ -124,7 +124,7 @@ func (d *cmsRoleDAO) List(ctx context.Context, limit, offset int) ([]*domain.CMS
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var roles []*domain.CMSRole
 	for rows.Next() {

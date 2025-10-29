@@ -59,7 +59,7 @@ func (d *userCMSRoleDAO) GetUserCMSRoles(ctx context.Context, userID string) ([]
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var roles []*domain.CMSRole
 	for rows.Next() {
@@ -99,7 +99,7 @@ func (d *userCMSRoleDAO) GetCMSRoleUsers(ctx context.Context, cmsRoleID string) 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var userIDs []string
 	for rows.Next() {
