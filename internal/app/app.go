@@ -240,7 +240,9 @@ func (a *App) waitForShutdown() {
 	<-sigChan
 
 	a.logger.Info("Shutting down gracefully...")
-	a.Shutdown(context.Background())
+	if err := a.Shutdown(context.Background()); err != nil {
+		a.logger.Error("Error during shutdown", zap.Error(err))
+	}
 }
 
 // Shutdown performs graceful shutdown
@@ -281,7 +283,11 @@ func (a *App) Shutdown(ctx context.Context) error {
 
 	// Sync logger
 	if a.logger != nil {
-		_ = a.logger.Sync()
+		if syncErr := a.logger.Sync(); syncErr != nil {
+			// Ignore sync errors on stdout/stderr (common on some platforms)
+			// Only log if it's a real error
+			a.logger.Warn("Logger sync returned error (may be harmless)", zap.Error(syncErr))
+		}
 	}
 
 	a.logger.Info("Service shutdown complete")

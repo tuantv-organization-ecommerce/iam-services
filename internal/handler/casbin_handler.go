@@ -228,8 +228,15 @@ func (h *GRPCHandler) ListAPIResources(ctx context.Context, req *pb.ListAPIResou
 		}
 	}
 
+	// Safe conversion with overflow check
+	totalInt32 := int32(len(pbResources))
+	if len(pbResources) > 0 && int(totalInt32) != len(pbResources) {
+		// Overflow occurred - use max int32
+		totalInt32 = 2147483647
+	}
+
 	return &pb.ListAPIResourcesResponse{
 		Resources: pbResources,
-		Total:     int32(len(pbResources)),
+		Total:     totalInt32,
 	}, nil
 }

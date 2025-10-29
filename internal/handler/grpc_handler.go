@@ -288,9 +288,16 @@ func (h *GRPCHandler) ListRoles(ctx context.Context, req *pb.ListRolesRequest) (
 		pbRoles[i] = domainRoleToPB(role)
 	}
 
+	// Safe conversion with overflow check
+	totalInt32 := int32(total)
+	if total > 0 && int(totalInt32) != total {
+		h.logger.Warn("Total count overflow in ListRoles", zap.Int("total", total))
+		totalInt32 = 2147483647 // Max int32
+	}
+
 	return &pb.ListRolesResponse{
 		Roles: pbRoles,
-		Total: int32(total),
+		Total: totalInt32,
 	}, nil
 }
 
@@ -342,8 +349,15 @@ func (h *GRPCHandler) ListPermissions(ctx context.Context, req *pb.ListPermissio
 		pbPermissions[i] = domainPermissionToPB(perm)
 	}
 
+	// Safe conversion with overflow check
+	totalInt32 := int32(total)
+	if total > 0 && int(totalInt32) != total {
+		h.logger.Warn("Total count overflow in ListPermissions", zap.Int("total", total))
+		totalInt32 = 2147483647 // Max int32
+	}
+
 	return &pb.ListPermissionsResponse{
 		Permissions: pbPermissions,
-		Total:       int32(total),
+		Total:       totalInt32,
 	}, nil
 }

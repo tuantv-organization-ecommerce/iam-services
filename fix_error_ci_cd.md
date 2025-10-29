@@ -191,5 +191,103 @@ defer func() {
 ```
 Tuy nhiên, với `errcheck` mặc định, `defer rows.Close()` là đủ, gọn và đúng idiom.
 
+---
+
+## 15) Lỗi revive: "package-comments: should have a package comment"
+- Mô tả: Linter `revive` yêu cầu mỗi package phải có comment mô tả chức năng.
+- Nguyên nhân: File đầu tiên trong package thiếu package-level comment.
+- Fix: Thêm comment trước dòng `package <name>`.
+- Thay đổi đã áp dụng:
+  - `internal/application/dto/auth_dto.go`: Thêm comment mô tả package dto
+
+Ví dụ:
+```go
+// Package dto provides Data Transfer Objects for application layer communication.
+// It contains request/response structures for authentication and authorization operations.
+package dto
+```
+
+---
+
+## 16) Lỗi gosec G115: "integer overflow conversion int -> int32"
+- Mô tả: `gosec` cảnh báo chuyển đổi từ `int` sang `int32` có thể gây overflow.
+- Nguyên nhân: Trực tiếp ép kiểu `int32(total)` mà không kiểm tra giá trị.
+- Fix: Thêm overflow check trước khi convert, dùng giá trị max nếu overflow.
+- Thay đổi đã áp dụng:
+  - `internal/handler/grpc_handler.go`: `ListRoles`, `ListPermissions`
+  - `internal/handler/casbin_handler.go`: `ListAPIResources`
+
+Ví dụ:
+```go
+// Safe conversion with overflow check
+totalInt32 := int32(total)
+if total > 0 && int(totalInt32) != total {
+    h.logger.Warn("Total count overflow in ListRoles", zap.Int("total", total))
+    totalInt32 = 2147483647 // Max int32
+}
+return &pb.ListRolesResponse{
+    Roles: pbRoles,
+    Total: totalInt32,
+}, nil
+```
+
+---
+
+## 17) Lỗi goconst: "string has N occurrences, make it a constant"
+- Mô tả: Linter `goconst` yêu cầu string lặp lại nhiều lần nên được đặt làm constant.
+- Nguyên nhân: Dùng hardcode string nhiều lần trong test files.
+- Fix: Extract ra constants.
+- Thay đổi đã áp dụng:
+  - `pkg/password/password_manager_test.go`: Extract `testPassword`
+  - `pkg/jwt/jwt_manager_test.go`: Extract `testUserID`, `testUsername`
+
+Ví dụ:
+```go
+const (
+    testPassword = "MySecurePassword123!"
+)
+
+func TestHashPassword_Success(t *testing.T) {
+    manager := NewPasswordManager()
+    password := testPassword  // Thay vì hardcode
+    // ...
+}
+```
+
+---
+
+## 18) Lỗi errcheck: "Error return value is not checked" (Sync)
+- Mô tả: `errcheck` báo lỗi vì không check error từ `logger.Sync()`.
+- Nguyên nhân: Dùng `_ = logger.Sync()` hoặc gọi mà không check return.
+- Fix: Check error và log warning (vì Sync() thường báo lỗi harmless trên stdout/stderr).
+- Thay đổi đã áp dụng:
+  - `internal/app/app.go`: `waitForShutdown`, `Shutdown`
+  - `internal/container/container.go`: `Close`
+
+Ví dụ:
+```go
+// Trước
+_ = a.logger.Sync()
+
+// Sau
+if syncErr := a.logger.Sync(); syncErr != nil {
+    // Ignore sync errors on stdout/stderr (common on some platforms)
+    a.logger.Warn("Logger sync returned error (may be harmless)", zap.Error(syncErr))
+}
+```
+
+Và check return value của `Shutdown()`:
+```go
+// Trước
+a.Shutdown(context.Background())
+
+// Sau
+if err := a.Shutdown(context.Background()); err != nil {
+    a.logger.Error("Error during shutdown", zap.Error(err))
+}
+```
+
+---
+
 ## Liên hệ
 - Nếu vẫn lỗi, đính kèm log step fail (trước và sau fix) để truy vết nhanh.

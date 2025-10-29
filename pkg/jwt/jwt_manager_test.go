@@ -8,6 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testUserID   = "user-123"
+	testUsername = "testuser"
+)
+
 func TestNewJWTManager(t *testing.T) {
 	secret := "test-secret-key-min-32-chars-long"
 	accessDuration := time.Hour
@@ -24,8 +29,8 @@ func TestNewJWTManager(t *testing.T) {
 func TestGenerateAccessToken(t *testing.T) {
 	manager := NewJWTManager("test-secret-key-min-32-chars-long", time.Hour, time.Hour*24)
 
-	userID := "user-123"
-	username := "testuser"
+	userID := testUserID
+	username := testUsername
 	roles := []string{"user", "admin"}
 
 	token, err := manager.GenerateAccessToken(userID, username, roles)
@@ -37,7 +42,7 @@ func TestGenerateAccessToken(t *testing.T) {
 func TestGenerateRefreshToken(t *testing.T) {
 	manager := NewJWTManager("test-secret-key-min-32-chars-long", time.Hour, time.Hour*24)
 
-	userID := "user-123"
+	userID := testUserID
 
 	token, err := manager.GenerateRefreshToken(userID)
 
@@ -48,8 +53,8 @@ func TestGenerateRefreshToken(t *testing.T) {
 func TestVerifyToken_Success(t *testing.T) {
 	manager := NewJWTManager("test-secret-key-min-32-chars-long", time.Hour, time.Hour*24)
 
-	userID := "user-123"
-	username := "testuser"
+	userID := testUserID
+	username := testUsername
 	roles := []string{"user", "admin"}
 
 	// Generate token
@@ -76,8 +81,8 @@ func TestVerifyToken_ExpiredToken(t *testing.T) {
 	// Create manager with very short expiration
 	manager := NewJWTManager("test-secret-key-min-32-chars-long", time.Millisecond, time.Millisecond)
 
-	userID := "user-123"
-	username := "testuser"
+	userID := testUserID
+	username := testUsername
 	roles := []string{"user"}
 
 	// Generate token
@@ -97,7 +102,7 @@ func TestVerifyToken_WrongSecret(t *testing.T) {
 	manager2 := NewJWTManager("secret-key-2-min-32-chars-long", time.Hour, time.Hour*24)
 
 	// Generate token with manager1
-	token, err := manager1.GenerateAccessToken("user-123", "testuser", []string{"user"})
+	token, err := manager1.GenerateAccessToken(testUserID, testUsername, []string{"user"})
 	require.NoError(t, err)
 
 	// Try to verify with manager2 (different secret)

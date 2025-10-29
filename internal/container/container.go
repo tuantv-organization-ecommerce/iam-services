@@ -171,7 +171,10 @@ func (c *Container) initializeHandlers() {
 // Close cleans up resources
 func (c *Container) Close() error {
 	if c.Logger != nil {
-		_ = c.Logger.Sync()
+		if err := c.Logger.Sync(); err != nil {
+			// Ignore sync errors on stdout/stderr (common on some platforms)
+			c.Logger.Warn("Logger sync returned error (may be harmless)", zap.Error(err))
+		}
 	}
 	return nil
 }

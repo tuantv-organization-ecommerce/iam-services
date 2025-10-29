@@ -1,3 +1,5 @@
+// Package dto provides Data Transfer Objects for application layer communication.
+// It contains request/response structures for authentication and authorization operations.
 package dto
 
 // RegisterRequest represents user registration input
