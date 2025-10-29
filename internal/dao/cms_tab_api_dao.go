@@ -114,7 +114,7 @@ func (d *cmsTabAPIDAO) FindByTab(ctx context.Context, tabName string) ([]*CMSTab
 	if err != nil {
 		return nil, fmt.Errorf("failed to find cms tab-apis by tab: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
+	defer rows.Close()
 
 	var tabAPIs []*CMSTabAPI
 	for rows.Next() {
@@ -149,7 +149,7 @@ func (d *cmsTabAPIDAO) FindByAPI(ctx context.Context, apiPath, method string) ([
 	if err != nil {
 		return nil, fmt.Errorf("failed to find cms tab-apis by api: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
+	defer rows.Close()
 
 	var tabAPIs []*CMSTabAPI
 	for rows.Next() {
@@ -183,7 +183,7 @@ func (d *cmsTabAPIDAO) ListAll(ctx context.Context) ([]*CMSTabAPI, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list cms tab-apis: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
+	defer rows.Close()
 
 	var tabAPIs []*CMSTabAPI
 	for rows.Next() {

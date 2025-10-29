@@ -104,7 +104,7 @@ func (d *permissionDAO) List(ctx context.Context, limit, offset int) ([]*domain.
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = rows.Close() }()
+	defer rows.Close()
 
 	var permissions []*domain.Permission
 	for rows.Next() {

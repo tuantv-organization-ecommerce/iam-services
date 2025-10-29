@@ -157,5 +157,39 @@ Tổng hợp lỗi thường gặp khi chạy CI/CD trên GitHub Actions cho iam
 
 ---
 
+## 14) Lỗi errcheck: "Error return value of rows.Close is not checked"
+- Mô tả: Linter báo lỗi vì kết quả trả về của `rows.Close()` bị bỏ qua.
+- Nguyên nhân: Sử dụng `defer func() { _ = rows.Close() }()` khiến `errcheck` coi là bỏ qua lỗi có chủ đích.
+- Fix tối ưu: Dùng cú pháp chuẩn `defer rows.Close()` để errcheck bỏ qua hợp lệ trong ngữ cảnh `defer` (idiomatic Go). Không thay đổi control flow và vẫn đảm bảo đóng `rows` khi thoát hàm.
+- Thay đổi đã áp dụng:
+  - `internal/dao/role_permission_dao.go`: thay thế ở 2 vị trí `GetRolePermissions`, `GetPermissionRoles`
+  - `internal/dao/role_dao.go`: `List`
+  - `internal/dao/permission_dao.go`: `List`
+  - `internal/dao/cms_tab_api_dao.go`: `FindByTab`, `FindByAPI`, `ListAll`
+  - `internal/dao/cms_role_dao.go`: `List`
+  - `internal/dao/api_resource_dao.go`: `ListByService`, `List`
+
+Ví dụ trước/sau:
+
+Trước:
+```go
+defer func() { _ = rows.Close() }()
+```
+
+Sau (idiomatic):
+```go
+defer rows.Close()
+```
+
+Ghi chú nâng cao: Nếu muốn xử lý lỗi đóng kết nối một cách nghiêm ngặt (ví dụ ghi log hoặc trả lỗi nếu chưa có lỗi khác), có thể dùng:
+```go
+defer func() {
+    if cerr := rows.Close(); cerr != nil {
+        // log cerr hoặc gán vào err đã đặt tên trong chữ ký hàm
+    }
+}()
+```
+Tuy nhiên, với `errcheck` mặc định, `defer rows.Close()` là đủ, gọn và đúng idiom.
+
 ## Liên hệ
 - Nếu vẫn lỗi, đính kèm log step fail (trước và sau fix) để truy vết nhanh.

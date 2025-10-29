@@ -100,7 +100,7 @@ func (d *apiResourceDAO) ListByService(ctx context.Context, service string) ([]*
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = rows.Close() }()
+	defer rows.Close()
 
 	var resources []*domain.APIResource
 	for rows.Next() {
@@ -133,7 +133,7 @@ func (d *apiResourceDAO) List(ctx context.Context, limit, offset int) ([]*domain
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = rows.Close() }()
+	defer rows.Close()
 
 	var resources []*domain.APIResource
 	for rows.Next() {
