@@ -7,10 +7,14 @@ import (
 )
 
 var (
+	// ErrInvalidAPIResource indicates an invalid API resource entity
 	ErrInvalidAPIResource = errors.New("invalid API resource")
-	ErrEmptyPath          = errors.New("path cannot be empty")
-	ErrEmptyMethod        = errors.New("method cannot be empty")
-	ErrInvalidMethod      = errors.New("invalid HTTP method")
+	// ErrEmptyPath indicates path field is empty
+	ErrEmptyPath = errors.New("path cannot be empty")
+	// ErrEmptyMethod indicates method field is empty
+	ErrEmptyMethod = errors.New("method cannot be empty")
+	// ErrInvalidMethod indicates an invalid HTTP method
+	ErrInvalidMethod = errors.New("invalid HTTP method")
 )
 
 // HTTPMethod represents valid HTTP methods

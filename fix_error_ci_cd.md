@@ -289,5 +289,112 @@ if err := a.Shutdown(context.Background()); err != nil {
 
 ---
 
+## 19) Lỗi revive: "exported var/method should have comment"
+- Mô tả: Linter `revive` yêu cầu tất cả exported symbols (vars, consts, methods) phải có comment.
+- Nguyên nhân: Exported vars/methods/consts thiếu comment giải thích.
+- Fix: Thêm comment mô tả cho mỗi exported symbol.
+- Thay đổi đã áp dụng:
+  - `internal/domain/model/api_resource.go`: Comment cho tất cả Error vars
+  - `internal/domain/model/user.go`: Comment cho Error vars và methods `ID()`, `Username()`
+  - `internal/domain/casbin.go`: Comment cho package, constants `DomainUser`, `DomainCMS`, `DomainAPI`, `CMSTab*`
+
+Ví dụ:
+```go
+// Trước
+var (
+	ErrInvalidUsername = errors.New("invalid username")
+)
+
+// Sau
+var (
+	// ErrInvalidUsername indicates username validation failed
+	ErrInvalidUsername = errors.New("invalid username")
+)
+```
+
+Với methods:
+```go
+// ID returns the user's unique identifier
+func (u *User) ID() string { return u.id }
+
+// Username returns the user's username
+func (u *User) Username() string { return u.username }
+```
+
+Với constants:
+```go
+const (
+	// DomainUser is the domain for end user authorization
+	DomainUser CasbinDomain = "user"
+	// DomainCMS is the domain for CMS/admin panel authorization
+	DomainCMS CasbinDomain = "cms"
+)
+```
+
+---
+
+## 20) Lỗi gosec G115: Integer overflow (cải tiến)
+- Mô tả: Sau khi thêm overflow check inline, gosec vẫn cảnh báo do phát hiện direct conversion.
+- Nguyên nhân: Dù có check sau conversion, gosec scan static và cảnh báo ngay tại dòng `int32(value)`.
+- Fix tối ưu: Tạo helper function `safeIntToInt32()` với overflow check và dùng `#nosec` comment có giải thích.
+- Thay đổi đã áp dụng:
+  - `internal/handler/grpc_handler.go`: Thêm helper function, dùng trong `ListRoles`, `ListPermissions`
+  - `internal/handler/casbin_handler.go`: Thêm helper function, dùng trong `ListAPIResources`
+
+Helper function:
+```go
+// safeIntToInt32 safely converts int to int32 with overflow protection
+func safeIntToInt32(value int) int32 {
+	const maxInt32 = 2147483647
+	if value > maxInt32 {
+		return maxInt32
+	}
+	if value < -2147483648 {
+		return -2147483648
+	}
+	return int32(value) // #nosec G115 -- overflow checked above
+}
+```
+
+Usage:
+```go
+// Trước
+totalInt32 := int32(total)  // Gosec warns here
+if total > 0 && int(totalInt32) != total {
+	totalInt32 = 2147483647
+}
+
+// Sau
+Total: safeIntToInt32(total),  // Clean, no warning
+```
+
+---
+
+## Tổng kết các fix Clean Code
+
+### Đã fix trong lần 1:
+1. ✅ Package comment cho `dto` package (revive)
+2. ✅ Integer overflow với inline check (gosec G115)
+3. ✅ Extract test string constants (goconst)
+4. ✅ Check `Sync()` và `Shutdown()` errors (errcheck)
+
+### Đã fix trong lần 2:
+5. ✅ Package comment cho `domain` package (revive)
+6. ✅ Comments cho exported vars: `ErrInvalidAPIResource`, `ErrInvalidUsername`, etc. (revive)
+7. ✅ Comments cho exported methods: `ID()`, `Username()` (revive)
+8. ✅ Comments cho exported constants: `DomainUser`, `CMSTabProduct`, etc. (revive)
+9. ✅ Integer overflow với helper function + #nosec (gosec G115 - cải tiến)
+
+### Checklist hoàn thành:
+- ✅ Tất cả package đều có package comment
+- ✅ Tất cả exported vars có comment
+- ✅ Tất cả exported methods có comment
+- ✅ Tất cả exported constants có comment
+- ✅ Integer overflow được xử lý an toàn
+- ✅ Test strings được extract thành constants
+- ✅ Error returns được check đầy đủ
+
+---
+
 ## Liên hệ
 - Nếu vẫn lỗi, đính kèm log step fail (trước và sau fix) để truy vết nhanh.

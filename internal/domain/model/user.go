@@ -6,12 +6,18 @@ import (
 )
 
 var (
-	ErrInvalidUsername     = errors.New("invalid username")
-	ErrInvalidEmail        = errors.New("invalid email")
-	ErrUserAlreadyActive   = errors.New("user is already active")
+	// ErrInvalidUsername indicates username validation failed
+	ErrInvalidUsername = errors.New("invalid username")
+	// ErrInvalidEmail indicates email validation failed
+	ErrInvalidEmail = errors.New("invalid email")
+	// ErrUserAlreadyActive indicates user is already in active state
+	ErrUserAlreadyActive = errors.New("user is already active")
+	// ErrUserAlreadyInactive indicates user is already in inactive state
 	ErrUserAlreadyInactive = errors.New("user is already inactive")
-	ErrPasswordTooShort    = errors.New("password is too short")
-	ErrEmptyPassword       = errors.New("password cannot be empty")
+	// ErrPasswordTooShort indicates password does not meet minimum length
+	ErrPasswordTooShort = errors.New("password is too short")
+	// ErrEmptyPassword indicates password field is empty
+	ErrEmptyPassword = errors.New("password cannot be empty")
 )
 
 // User represents a user aggregate root in the domain
@@ -58,7 +64,11 @@ func ReconstructUser(id, username, email, passwordHash, fullName string, isActiv
 }
 
 // Getters
-func (u *User) ID() string           { return u.id }
+
+// ID returns the user's unique identifier
+func (u *User) ID() string { return u.id }
+
+// Username returns the user's username
 func (u *User) Username() string     { return u.username }
 func (u *User) Email() string        { return u.email }
 func (u *User) PasswordHash() string { return u.passwordHash }

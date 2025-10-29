@@ -288,16 +288,9 @@ func (h *GRPCHandler) ListRoles(ctx context.Context, req *pb.ListRolesRequest) (
 		pbRoles[i] = domainRoleToPB(role)
 	}
 
-	// Safe conversion with overflow check
-	totalInt32 := int32(total)
-	if total > 0 && int(totalInt32) != total {
-		h.logger.Warn("Total count overflow in ListRoles", zap.Int("total", total))
-		totalInt32 = 2147483647 // Max int32
-	}
-
 	return &pb.ListRolesResponse{
 		Roles: pbRoles,
-		Total: totalInt32,
+		Total: safeIntToInt32(total),
 	}, nil
 }
 
@@ -349,15 +342,20 @@ func (h *GRPCHandler) ListPermissions(ctx context.Context, req *pb.ListPermissio
 		pbPermissions[i] = domainPermissionToPB(perm)
 	}
 
-	// Safe conversion with overflow check
-	totalInt32 := int32(total)
-	if total > 0 && int(totalInt32) != total {
-		h.logger.Warn("Total count overflow in ListPermissions", zap.Int("total", total))
-		totalInt32 = 2147483647 // Max int32
-	}
-
 	return &pb.ListPermissionsResponse{
 		Permissions: pbPermissions,
-		Total:       totalInt32,
+		Total:       safeIntToInt32(total),
 	}, nil
+}
+
+// safeIntToInt32 safely converts int to int32 with overflow protection
+func safeIntToInt32(value int) int32 {
+	const maxInt32 = 2147483647
+	if value > maxInt32 {
+		return maxInt32
+	}
+	if value < -2147483648 {
+		return -2147483648
+	}
+	return int32(value) // #nosec G115 -- overflow checked above
 }

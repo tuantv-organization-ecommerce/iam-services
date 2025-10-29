@@ -1,3 +1,5 @@
+// Package domain defines core domain models and entities for authorization.
+// It contains Casbin-related types, CMS role definitions, and authorization structures.
 package domain
 
 import (
@@ -8,21 +10,30 @@ import (
 type CasbinDomain string
 
 const (
-	DomainUser CasbinDomain = "user" // Domain for end users
-	DomainCMS  CasbinDomain = "cms"  // Domain for CMS/admin panel
-	DomainAPI  CasbinDomain = "api"  // Domain for API access
+	// DomainUser is the domain for end user authorization
+	DomainUser CasbinDomain = "user"
+	// DomainCMS is the domain for CMS/admin panel authorization
+	DomainCMS CasbinDomain = "cms"
+	// DomainAPI is the domain for API access authorization
+	DomainAPI CasbinDomain = "api"
 )
 
 // CMSTab represents different tabs/sections in CMS
 type CMSTab string
 
 const (
-	CMSTabProduct   CMSTab = "product"
+	// CMSTabProduct represents the product management tab
+	CMSTabProduct CMSTab = "product"
+	// CMSTabInventory represents the inventory management tab
 	CMSTabInventory CMSTab = "inventory"
-	CMSTabOrder     CMSTab = "order"
-	CMSTabUser      CMSTab = "user"
-	CMSTabReport    CMSTab = "report"
-	CMSTabSetting   CMSTab = "setting"
+	// CMSTabOrder represents the order management tab
+	CMSTabOrder CMSTab = "order"
+	// CMSTabUser represents the user management tab
+	CMSTabUser CMSTab = "user"
+	// CMSTabReport represents the reporting/analytics tab
+	CMSTabReport CMSTab = "report"
+	// CMSTabSetting represents the system settings tab
+	CMSTabSetting CMSTab = "setting"
 )
 
 // APIResource represents API resource paths and methods

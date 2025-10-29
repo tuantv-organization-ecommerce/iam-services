@@ -228,15 +228,20 @@ func (h *GRPCHandler) ListAPIResources(ctx context.Context, req *pb.ListAPIResou
 		}
 	}
 
-	// Safe conversion with overflow check
-	totalInt32 := int32(len(pbResources))
-	if len(pbResources) > 0 && int(totalInt32) != len(pbResources) {
-		// Overflow occurred - use max int32
-		totalInt32 = 2147483647
-	}
-
 	return &pb.ListAPIResourcesResponse{
 		Resources: pbResources,
-		Total:     totalInt32,
+		Total:     safeIntToInt32(len(pbResources)),
 	}, nil
+}
+
+// safeIntToInt32 safely converts int to int32 with overflow protection
+func safeIntToInt32(value int) int32 {
+	const maxInt32 = 2147483647
+	if value > maxInt32 {
+		return maxInt32
+	}
+	if value < -2147483648 {
+		return -2147483648
+	}
+	return int32(value) // #nosec G115 -- overflow checked above
 }
