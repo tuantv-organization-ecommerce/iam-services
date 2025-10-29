@@ -6,8 +6,10 @@ import (
 )
 
 var (
+	// ErrInvalidRoleName indicates role name validation failed
 	ErrInvalidRoleName = errors.New("invalid role name")
-	ErrEmptyRoleName   = errors.New("role name cannot be empty")
+	// ErrEmptyRoleName indicates role name is empty
+	ErrEmptyRoleName = errors.New("role name cannot be empty")
 )
 
 // Role represents a role entity in the domain
@@ -49,13 +51,27 @@ func ReconstructRole(id, name, description, domain string, createdAt, updatedAt 
 }
 
 // Getters
-func (r *Role) ID() string                { return r.id }
-func (r *Role) Name() string              { return r.name }
-func (r *Role) Description() string       { return r.description }
-func (r *Role) Domain() string            { return r.domain }
+
+// ID returns the role's unique identifier
+func (r *Role) ID() string { return r.id }
+
+// Name returns the role's name
+func (r *Role) Name() string { return r.name }
+
+// Description returns the role's description
+func (r *Role) Description() string { return r.description }
+
+// Domain returns the role's authorization domain
+func (r *Role) Domain() string { return r.domain }
+
+// Permissions returns the permissions assigned to this role
 func (r *Role) Permissions() []Permission { return r.permissions }
-func (r *Role) CreatedAt() time.Time      { return r.createdAt }
-func (r *Role) UpdatedAt() time.Time      { return r.updatedAt }
+
+// CreatedAt returns when the role was created
+func (r *Role) CreatedAt() time.Time { return r.createdAt }
+
+// UpdatedAt returns when the role was last updated
+func (r *Role) UpdatedAt() time.Time { return r.updatedAt }
 
 // UpdateDetails updates role details
 func (r *Role) UpdateDetails(name, description string) {

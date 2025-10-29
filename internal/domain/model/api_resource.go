@@ -1,3 +1,5 @@
+// Package model contains domain model entities for the IAM service.
+// It defines core business entities like User, Role, Permission, and APIResource.
 package model
 
 import (
@@ -72,12 +74,26 @@ func ReconstructAPIResource(id, path string, method HTTPMethod, service, descrip
 }
 
 // Getters
-func (a *APIResource) ID() string           { return a.id }
-func (a *APIResource) Path() string         { return a.path }
-func (a *APIResource) Method() HTTPMethod   { return a.method }
-func (a *APIResource) Service() string      { return a.service }
-func (a *APIResource) Description() string  { return a.description }
+
+// ID returns the API resource's unique identifier
+func (a *APIResource) ID() string { return a.id }
+
+// Path returns the API resource's path
+func (a *APIResource) Path() string { return a.path }
+
+// Method returns the HTTP method for this API resource
+func (a *APIResource) Method() HTTPMethod { return a.method }
+
+// Service returns the service this API resource belongs to
+func (a *APIResource) Service() string { return a.service }
+
+// Description returns the API resource's description
+func (a *APIResource) Description() string { return a.description }
+
+// CreatedAt returns when the API resource was created
 func (a *APIResource) CreatedAt() time.Time { return a.createdAt }
+
+// UpdatedAt returns when the API resource was last updated
 func (a *APIResource) UpdatedAt() time.Time { return a.updatedAt }
 
 // UpdateDetails updates API resource details

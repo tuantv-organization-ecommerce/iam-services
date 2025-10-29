@@ -400,18 +400,26 @@ Total: safeIntToInt32(total),  // Clean, no warning
 **Packages:**
 - `internal/application/dto/auth_dto.go` - Package comment
 - `internal/domain/casbin.go` - Package comment + domain constants
+- `internal/domain/model/` - Package comment (api_resource.go, user.go, role.go, permission.go, cms_role.go)
 
 **Error Variables:**
 - `internal/domain/model/api_resource.go` - ErrInvalidAPIResource, ErrEmptyPath, ErrEmptyMethod, ErrInvalidMethod
-- `internal/domain/model/user.go` - All error vars
+- `internal/domain/model/user.go` - All error vars (ErrInvalidUsername, ErrInvalidEmail, etc.)
+- `internal/domain/model/permission.go` - ErrInvalidPermission, ErrEmptyResource, ErrEmptyAction
+- `internal/domain/model/role.go` - ErrInvalidRoleName, ErrEmptyRoleName
+- `internal/domain/model/cms_role.go` - ErrInvalidCMSRole, ErrEmptyTabs
 
 **Constants:**
 - `internal/domain/model/api_resource.go` - HTTP method constants
 - `internal/domain/casbin.go` - CMS tab constants
 - `internal/domain/service/authorization_service.go` - Domain constants
 
-**Methods:**
-- `internal/domain/model/user.go` - ID(), Username() methods
+**Methods (All Getters):**
+- `internal/domain/model/user.go` - All getters: ID(), Username(), Email(), PasswordHash(), FullName(), IsActive(), Roles(), CreatedAt(), UpdatedAt()
+- `internal/domain/model/role.go` - All getters: ID(), Name(), Description(), Domain(), Permissions(), CreatedAt(), UpdatedAt()
+- `internal/domain/model/permission.go` - All getters: ID(), Name(), Resource(), Action(), Description(), CreatedAt(), UpdatedAt()
+- `internal/domain/model/api_resource.go` - All getters: ID(), Path(), Method(), Service(), Description(), CreatedAt(), UpdatedAt()
+- `internal/domain/model/cms_role.go` - All getters: ID(), Name(), Description(), Tabs(), CreatedAt(), UpdatedAt()
 
 **Handlers:**
 - `internal/handler/grpc_handler.go` - Added safeIntToInt32 helper
@@ -433,6 +441,9 @@ Total: safeIntToInt32(total),  // Clean, no warning
 ```go
 // Package dto provides Data Transfer Objects for application layer communication.
 package dto
+
+// Package model contains domain model entities for the IAM service.
+package model
 ```
 
 ### Exported Const:
@@ -440,6 +451,8 @@ package dto
 const (
     // MethodGET represents HTTP GET method
     MethodGET HTTPMethod = "GET"
+    // MethodPOST represents HTTP POST method
+    MethodPOST HTTPMethod = "POST"
 )
 ```
 
@@ -448,19 +461,32 @@ const (
 var (
     // ErrInvalidUsername indicates username validation failed
     ErrInvalidUsername = errors.New("invalid username")
+    // ErrInvalidEmail indicates email validation failed
+    ErrInvalidEmail = errors.New("invalid email")
 )
 ```
 
-### Exported Method:
+### Exported Getter Methods (Special Form for ID):
 ```go
 // ID returns the user's unique identifier
 func (u *User) ID() string { return u.id }
+
+// Username returns the user's username
+func (u *User) Username() string { return u.username }
+
+// Email returns the user's email address
+func (u *User) Email() string { return u.email }
 ```
+
+**Note:** For `ID()` methods, revive requires the form "ID ..." not "Id ..."
 
 ### Exported Type:
 ```go
 // User represents a user aggregate root in the domain
 type User struct { ... }
+
+// Permission represents a permission entity in the domain
+type Permission struct { ... }
 ```
 
 ---

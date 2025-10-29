@@ -69,13 +69,27 @@ func ReconstructUser(id, username, email, passwordHash, fullName string, isActiv
 func (u *User) ID() string { return u.id }
 
 // Username returns the user's username
-func (u *User) Username() string     { return u.username }
-func (u *User) Email() string        { return u.email }
+func (u *User) Username() string { return u.username }
+
+// Email returns the user's email address
+func (u *User) Email() string { return u.email }
+
+// PasswordHash returns the user's hashed password
 func (u *User) PasswordHash() string { return u.passwordHash }
-func (u *User) FullName() string     { return u.fullName }
-func (u *User) IsActive() bool       { return u.isActive }
-func (u *User) Roles() []string      { return u.roles }
+
+// FullName returns the user's full name
+func (u *User) FullName() string { return u.fullName }
+
+// IsActive returns whether the user account is active
+func (u *User) IsActive() bool { return u.isActive }
+
+// Roles returns the user's assigned roles
+func (u *User) Roles() []string { return u.roles }
+
+// CreatedAt returns when the user was created
 func (u *User) CreatedAt() time.Time { return u.createdAt }
+
+// UpdatedAt returns when the user was last updated
 func (u *User) UpdatedAt() time.Time { return u.updatedAt }
 
 // SetPasswordHash sets the hashed password
