@@ -92,6 +92,7 @@ func (d *rolePermissionDAO) GetPermissionRoles(ctx context.Context, permissionID
 	if err != nil {
 		return nil, err
 	}
+	
 	defer func() { _ = rows.Close() }()
 
 	var roles []*domain.Role
