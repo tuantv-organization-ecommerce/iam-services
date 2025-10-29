@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/tvttt/iam-services/internal/domain"
+	"log"
 )
 
 // RoleDAO defines the data access operations for Role entity
@@ -99,7 +100,12 @@ func (d *roleDAO) List(ctx context.Context, limit, offset int) ([]*domain.Role, 
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = rows.Close() }()
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 
 	var roles []*domain.Role
 	for rows.Next() {

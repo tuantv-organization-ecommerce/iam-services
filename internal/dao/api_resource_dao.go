@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/tvttt/iam-services/internal/domain"
+	"log"
 )
 
 // APIResourceDAO defines the data access operations for API resources
@@ -100,8 +101,12 @@ func (d *apiResourceDAO) ListByService(ctx context.Context, service string) ([]*
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = rows.Close() }()
-
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 	var resources []*domain.APIResource
 	for rows.Next() {
 		resource := &domain.APIResource{}
@@ -133,7 +138,12 @@ func (d *apiResourceDAO) List(ctx context.Context, limit, offset int) ([]*domain
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = rows.Close() }()
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 
 	var resources []*domain.APIResource
 	for rows.Next() {

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/tvttt/iam-services/internal/domain"
+	"log"
 )
 
 // RolePermissionDAO defines the data access operations for RolePermission relationship
@@ -58,7 +59,12 @@ func (d *rolePermissionDAO) GetRolePermissions(ctx context.Context, roleID strin
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = rows.Close() }()
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 
 	var permissions []*domain.Permission
 	for rows.Next() {
@@ -92,8 +98,12 @@ func (d *rolePermissionDAO) GetPermissionRoles(ctx context.Context, permissionID
 	if err != nil {
 		return nil, err
 	}
-	
-	defer func() { _ = rows.Close() }()
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 
 	var roles []*domain.Role
 	for rows.Next() {

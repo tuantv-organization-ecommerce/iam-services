@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/tvttt/iam-services/internal/domain"
+	"log"
 )
 
 // PermissionDAO defines the data access operations for Permission entity
@@ -104,7 +105,12 @@ func (d *permissionDAO) List(ctx context.Context, limit, offset int) ([]*domain.
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = rows.Close() }()
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 
 	var permissions []*domain.Permission
 	for rows.Next() {
