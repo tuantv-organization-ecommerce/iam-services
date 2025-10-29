@@ -393,6 +393,75 @@ Total: safeIntToInt32(total),  // Clean, no warning
 - ✅ Integer overflow được xử lý an toàn
 - ✅ Test strings được extract thành constants
 - ✅ Error returns được check đầy đủ
+- ✅ HTTP Method constants có comments (MethodGET, MethodPOST, MethodPUT, MethodDELETE, MethodPATCH)
+- ✅ CasbinDomain constants có comments (DomainUser, DomainCMS, DomainAPI)
+
+### Files đã cập nhật:
+**Packages:**
+- `internal/application/dto/auth_dto.go` - Package comment
+- `internal/domain/casbin.go` - Package comment + domain constants
+
+**Error Variables:**
+- `internal/domain/model/api_resource.go` - ErrInvalidAPIResource, ErrEmptyPath, ErrEmptyMethod, ErrInvalidMethod
+- `internal/domain/model/user.go` - All error vars
+
+**Constants:**
+- `internal/domain/model/api_resource.go` - HTTP method constants
+- `internal/domain/casbin.go` - CMS tab constants
+- `internal/domain/service/authorization_service.go` - Domain constants
+
+**Methods:**
+- `internal/domain/model/user.go` - ID(), Username() methods
+
+**Handlers:**
+- `internal/handler/grpc_handler.go` - Added safeIntToInt32 helper
+- `internal/handler/casbin_handler.go` - Uses shared helper
+
+**Tests:**
+- `pkg/password/password_manager_test.go` - Extracted testPassword constant
+- `pkg/jwt/jwt_manager_test.go` - Extracted testUserID, testUsername constants
+
+**App & Container:**
+- `internal/app/app.go` - Check Shutdown() errors
+- `internal/container/container.go` - Check Logger.Sync() errors
+
+---
+
+## 📋 Quick Reference: Comment Patterns
+
+### Package Comment:
+```go
+// Package dto provides Data Transfer Objects for application layer communication.
+package dto
+```
+
+### Exported Const:
+```go
+const (
+    // MethodGET represents HTTP GET method
+    MethodGET HTTPMethod = "GET"
+)
+```
+
+### Exported Var/Error:
+```go
+var (
+    // ErrInvalidUsername indicates username validation failed
+    ErrInvalidUsername = errors.New("invalid username")
+)
+```
+
+### Exported Method:
+```go
+// ID returns the user's unique identifier
+func (u *User) ID() string { return u.id }
+```
+
+### Exported Type:
+```go
+// User represents a user aggregate root in the domain
+type User struct { ... }
+```
 
 ---
 

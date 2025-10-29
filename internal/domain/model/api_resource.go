@@ -21,11 +21,16 @@ var (
 type HTTPMethod string
 
 const (
-	MethodGET    HTTPMethod = "GET"
-	MethodPOST   HTTPMethod = "POST"
-	MethodPUT    HTTPMethod = "PUT"
+	// MethodGET represents HTTP GET method
+	MethodGET HTTPMethod = "GET"
+	// MethodPOST represents HTTP POST method
+	MethodPOST HTTPMethod = "POST"
+	// MethodPUT represents HTTP PUT method
+	MethodPUT HTTPMethod = "PUT"
+	// MethodDELETE represents HTTP DELETE method
 	MethodDELETE HTTPMethod = "DELETE"
-	MethodPATCH  HTTPMethod = "PATCH"
+	// MethodPATCH represents HTTP PATCH method
+	MethodPATCH HTTPMethod = "PATCH"
 )
 
 // APIResource represents an API endpoint resource
