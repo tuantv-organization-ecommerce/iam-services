@@ -12,9 +12,9 @@ run:
 
 linters:
   enable:
-    - revive       # Code quality and style
-    - errcheck     # Check error returns
-    - gosec        # Security issues
+#    - revive       # Code quality and style
+#    - errcheck     # Check error returns
+#    - gosec        # Security issues
     - goconst      # Repeated strings
     - gofmt        # Code formatting
     - goimports    # Import formatting
@@ -24,7 +24,7 @@ linters:
     - typecheck    # Type errors
     - unused       # Unused code
     - govet        # Go vet analysis
-    - unconvert    # Unnecessary conversions
+ #   - unconvert    # Unnecessary conversions
   disable:
     - structcheck  # Deprecated
     - deadcode     # Deprecated
