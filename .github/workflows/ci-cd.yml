@@ -261,7 +261,9 @@ jobs:
   security:
     name: Security Scan (Trivy → SARIF)
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -287,7 +289,7 @@ jobs:
 
       # Only upload to GitHub Code Scanning when the workflow has permission (not a PR from a fork)
       - name: Upload SARIF to GitHub Code Scanning
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
