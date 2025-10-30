@@ -196,3 +196,8 @@ Service **CAN RUN** với gRPC only:
 
 Sau khi generate proto files → Uncomment code → Full features! 🚀
 
+# golangci-lint
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.2
+$env:PATH += ";$env:GOPATH\bin"   # current session
+# Optional permanent: setx PATH "$($env:PATH);$env:GOPATH\bin"
+golangci-lint version

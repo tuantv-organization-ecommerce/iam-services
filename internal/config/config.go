@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"log"
 )
 
 // Config holds all configuration for the application
@@ -61,7 +62,8 @@ type SwaggerConfig struct {
 func Load() (*Config, error) {
 	// Try to load .env file (optional)
 	if err := godotenv.Load(); err != nil {
-		// Optional: ignore missing .env or other load errors in production/CI
+		log.Printf("Error loading .env file: %v", err)
+		return nil, err
 	}
 
 	config := &Config{

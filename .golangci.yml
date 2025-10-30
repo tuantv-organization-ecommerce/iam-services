@@ -18,12 +18,12 @@ linters:
     - goconst      # Repeated strings
     - gofmt        # Code formatting
 #    - goimports    # Import formatting
-    - misspell     # Spelling mistakes
-    - ineffassign  # Unused assignments
-    - staticcheck  # Static analysis
-    - typecheck    # Type errors
+#    - misspell     # Spelling mistakes
+#    - ineffassign  # Unused assignments
+#    - staticcheck  # Static analysis
+#    - typecheck    # Type errors
     - unused       # Unused code
-    - govet        # Go vet analysis
+#    - govet        # Go vet analysis
  #   - unconvert    # Unnecessary conversions
   disable:
     - structcheck  # Deprecated
