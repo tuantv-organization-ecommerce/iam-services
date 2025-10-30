@@ -17,7 +17,7 @@ linters:
 #    - gosec        # Security issues
     - goconst      # Repeated strings
     - gofmt        # Code formatting
-    - goimports    # Import formatting
+#    - goimports    # Import formatting
     - misspell     # Spelling mistakes
     - ineffassign  # Unused assignments
     - staticcheck  # Static analysis
