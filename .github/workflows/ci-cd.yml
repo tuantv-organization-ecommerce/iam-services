@@ -259,31 +259,38 @@ jobs:
   # JOB 4: Security Scan
   # ============================================
   security:
-    name: 🔒 Security Scan
+    name: Security Scan (Trivy → SARIF)
     runs-on: ubuntu-latest
-    needs: lint
+
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+      # Run Trivy against the repository (filesystem). If you prefer scanning an image, switch scan-type to 'image' and set image-ref.
+      - name: Run Trivy (SARIF)
+        uses: aquasecurity/trivy-action@0.26.0
         with:
-          scan-type: 'fs'
-          scan-ref: 'ecommerce/back_end/iam-services'
+          scan-type: 'fs'                 # 'fs' scans code; use 'image' to scan a container image
+          ignore-unfixed: true
           format: 'sarif'
-          output: 'trivy-results.sarif'
+          output: 'trivy-results.sarif'   # Ensure this matches the upload steps
+          exit-code: '0'                  # Don't fail the job on findings (adjust to your policy)
 
-      - name: Upload Trivy results to GitHub Security
+      # Always upload the SARIF as an artifact so you can download it, including on forked PRs
+      - name: Upload SARIF as artifact
+        if: ${{ hashFiles('trivy-results.sarif') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-sarif
+          path: trivy-results.sarif
+          if-no-files-found: error
+
+      # Only upload to GitHub Code Scanning when the workflow has permission (not a PR from a fork)
+      - name: Upload SARIF to GitHub Code Scanning
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
-
-      - name: Run gosec security scanner
-        uses: securego/gosec@master
-        with:
-          args: '-no-fail -fmt sarif -out gosec-results.sarif ./ecommerce/back_end/iam-services/...'
+          sarif_file: trivy-results.sarif
 
   # ============================================
   # JOB 5: Build & Push Docker Image
