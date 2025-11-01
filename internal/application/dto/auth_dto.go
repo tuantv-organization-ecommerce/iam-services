@@ -59,6 +59,17 @@ type VerifyTokenResponse struct {
 	Message string   `json:"message"`
 }
 
+// LogoutRequest represents logout input
+type LogoutRequest struct {
+	UserID string `json:"user_id" validate:"required"`
+	Token  string `json:"token" validate:"required"`
+}
+
+// LogoutResponse represents logout output
+type LogoutResponse struct {
+	Message string `json:"message"`
+}
+
 // UserDTO represents user data transfer object
 type UserDTO struct {
 	ID        string `json:"id"`

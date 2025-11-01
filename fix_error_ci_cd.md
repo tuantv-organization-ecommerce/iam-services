@@ -583,6 +583,241 @@ $env:PATH += ";E:\go\src\bin"  # Adjust based on your GOPATH
 
 ---
 
+---
+
+## 21) Swagger UI Integration với Basic Authentication
+
+### Tổng quan
+- Mô tả: Tích hợp Swagger UI để hiển thị API documentation với bảo mật Basic Authentication
+- Tech stack: grpc-gateway/v2, OpenAPI v2, Basic Auth
+- Swagger UI được bảo vệ bằng username/password
+
+### Các bước thực hiện
+
+#### 1. Thêm HTTP Annotations vào Proto Files
+- File: `pkg/proto/iam.proto`
+- Thêm import: `import "google/api/annotations.proto";`
+- Thêm HTTP options cho mỗi RPC method:
+```protobuf
+rpc Login(LoginRequest) returns (LoginResponse) {
+  option (google.api.http) = {
+    post: "/v1/auth/login"
+    body: "*"
+  };
+}
+```
+
+#### 2. Cập nhật Swagger Package (gokits)
+- File: `gokits/swagger/swagger.go`
+- Thêm `BasicAuthConfig` struct:
+```go
+type BasicAuthConfig struct {
+    Username string
+    Password string
+    Realm    string
+}
+```
+- Thêm `checkBasicAuth()` function với constant-time comparison
+- Cập nhật `Handler()` và `ServeSpec()` để support basic auth
+- Sử dụng `crypto/subtle.ConstantTimeCompare` để tránh timing attacks
+
+#### 3. Cập nhật IAM Service Config
+- File: `internal/config/config.go`
+- Thêm fields vào `SwaggerConfig`:
+  - `AuthUsername`: Username cho basic auth
+  - `AuthPassword`: Password cho basic auth
+  - `AuthRealm`: Realm cho WWW-Authenticate header
+- Đọc từ environment variables:
+  - `SWAGGER_AUTH_USERNAME` (default: "admin")
+  - `SWAGGER_AUTH_PASSWORD` (default: "changeme")
+  - `SWAGGER_AUTH_REALM` (default: "IAM Service API Documentation")
+
+#### 4. Enable HTTP Gateway
+- File: `internal/app/app.go`
+- Uncomment imports: `grpc-gateway/v2/runtime`, `swagger`, `insecure`
+- Uncomment và update `setupHTTPGateway()` function
+- Thêm basic auth config:
+```go
+basicAuth := &swagger.BasicAuthConfig{
+    Username: a.config.Swagger.AuthUsername,
+    Password: a.config.Swagger.AuthPassword,
+    Realm:    a.config.Swagger.AuthRealm,
+}
+```
+- Register Swagger handlers với basic auth protection
+
+#### 5. Generate Proto Files
+- Script: `scripts/generate-proto-simple.ps1`
+- Các bước:
+  1. Tạo third_party/google/api proto files
+  2. Generate gRPC files với `protoc-gen-go` và `protoc-gen-go-grpc`
+  3. Generate Gateway files với `protoc-gen-grpc-gateway`
+  4. Generate OpenAPI spec với `protoc-gen-openapiv2`
+- Output files:
+  - `pkg/proto/iam.pb.go`
+  - `pkg/proto/iam_grpc.pb.go`
+  - `pkg/proto/iam.pb.gw.go`
+  - `pkg/proto/iam.swagger.json`
+
+#### 6. Install Required Tools
+```powershell
+# Protoc plugins
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0
+go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.18.1
+go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.18.1
+
+# Add dependencies
+go get github.com/grpc-ecosystem/grpc-gateway/v2@v2.18.1
+go mod tidy
+```
+
+### Cấu hình Environment Variables
+Tạo file `.env` với nội dung:
+```bash
+# Swagger Configuration
+SWAGGER_ENABLED=true
+SWAGGER_BASE_PATH=/swagger/
+SWAGGER_SPEC_PATH=/swagger.json
+SWAGGER_TITLE=IAM Service API Documentation
+SWAGGER_AUTH_USERNAME=admin
+SWAGGER_AUTH_PASSWORD=changeme
+SWAGGER_AUTH_REALM=IAM Service API Documentation
+
+# Server Configuration
+HTTP_HOST=0.0.0.0
+HTTP_PORT=8080
+```
+
+### Sử dụng Swagger UI
+
+#### Access Swagger UI:
+1. Start service: `go run cmd/server/main.go`
+2. Navigate to: `http://localhost:8080/swagger/`
+3. Nhập credentials:
+   - Username: `admin` (hoặc giá trị `SWAGGER_AUTH_USERNAME`)
+   - Password: `changeme` (hoặc giá trị `SWAGGER_AUTH_PASSWORD`)
+4. Swagger UI hiển thị tất cả API endpoints
+
+#### Features:
+- ✅ Interactive API documentation
+- ✅ Try out API calls directly from UI
+- ✅ View request/response schemas
+- ✅ Protected với Basic Authentication
+- ✅ Auto-generated từ proto files
+- ✅ Support cả gRPC và HTTP/REST
+
+### Security Best Practices
+
+#### 1. Production Environment
+```bash
+# Đổi credentials mạnh hơn
+SWAGGER_AUTH_USERNAME=your-secure-username
+SWAGGER_AUTH_PASSWORD=your-secure-long-password
+
+# Hoặc disable Swagger trong production
+SWAGGER_ENABLED=false
+```
+
+#### 2. Timing Attack Prevention
+- Sử dụng `crypto/subtle.ConstantTimeCompare` trong `checkBasicAuth()`
+- Prevent timing-based password guessing
+
+#### 3. HTTPS in Production
+- Luôn dùng HTTPS khi deploy
+- Basic auth không encrypt credentials (chỉ base64 encode)
+- HTTPS bảo vệ credentials trong transit
+
+### Troubleshooting
+
+#### Issue: "protoc: command not found"
+```powershell
+# Install protoc via chocolatey
+choco install protoc
+
+# Or download from: https://github.com/protocolbuffers/protobuf/releases
+```
+
+#### Issue: "protoc-gen-go: not found"
+```powershell
+# Check if in PATH
+$env:PATH += ";E:\go\src\bin"  # Adjust based on your GOPATH
+
+# Or reinstall
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+```
+
+#### Issue: "google/protobuf/descriptor.proto: File not found"
+- Script `generate-proto-simple.ps1` tự động tìm protoc include directory
+- Common locations:
+  - `C:\ProgramData\chocolatey\lib\protoc\tools\include`
+  - `C:\Users\<username>\Downloads\include`
+
+#### Issue: Swagger UI không load
+1. Check logs: Tìm "Swagger UI enabled" message
+2. Verify HTTP server đã start: "HTTP Gateway is running"
+3. Check file exists: `ls pkg/proto/iam.swagger.json`
+4. Regenerate proto: `.\scripts\generate-proto-simple.ps1`
+
+#### Issue: 401 Unauthorized loop
+- Check credentials trong `.env` file
+- Verify `SWAGGER_AUTH_USERNAME` và `SWAGGER_AUTH_PASSWORD` set đúng
+- Clear browser cache/cookies
+
+### Files Changed
+
+#### New Files:
+- `pkg/proto/iam.pb.gw.go` - gRPC Gateway handlers
+- `pkg/proto/iam.swagger.json` - OpenAPI specification
+- `scripts/generate-proto-simple.ps1` - Proto generation script
+
+#### Modified Files:
+- `pkg/proto/iam.proto` - Added HTTP annotations
+- `gokits/swagger/swagger.go` - Added basic auth support
+- `internal/app/app.go` - Enabled HTTP gateway
+- `internal/config/config.go` - Added swagger auth config
+- `go.mod` - Added grpc-gateway dependency
+
+### Testing Swagger UI
+
+#### Manual Test:
+```powershell
+# 1. Generate proto files
+.\scripts\generate-proto-simple.ps1
+
+# 2. Start service
+go run cmd/server/main.go
+
+# 3. Open browser
+# Navigate to: http://localhost:8080/swagger/
+# Login with: admin / changeme
+
+# 4. Test an API
+# Try: POST /v1/auth/register
+# Fill in request body and Execute
+```
+
+#### Automated Test (Future):
+```go
+// Test swagger UI endpoint
+resp := testClient.GET("/swagger/")
+assert.Equal(t, 401, resp.StatusCode) // Without auth
+
+resp = testClient.GET("/swagger/", WithBasicAuth("admin", "changeme"))
+assert.Equal(t, 200, resp.StatusCode) // With auth
+```
+
+### Benefits
+1. ✅ API documentation tự động sync với code
+2. ✅ Interactive testing trực tiếp từ browser
+3. ✅ Bảo mật với Basic Authentication
+4. ✅ Support cả gRPC và HTTP/REST
+5. ✅ Standard OpenAPI format
+6. ✅ No manual doc maintenance required
+
+---
+
 ## Liên hệ
 - Nếu vẫn lỗi, đính kèm log step fail (trước và sau fix) để truy vết nhanh.
 - Xem `LINTING_SETUP.md` cho troubleshooting chi tiết về linting.
+- Xem phần "21) Swagger UI Integration" cho troubleshooting Swagger.

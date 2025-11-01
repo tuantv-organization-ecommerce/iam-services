@@ -37,6 +37,7 @@ type Container struct {
 
 	// Handlers
 	GRPCHandler *handler.GRPCHandler
+	GinHandler  *handler.GinHandler
 }
 
 // DAORegistry holds all DAOs
@@ -156,9 +157,18 @@ func (c *Container) initializeServices() error {
 	return nil
 }
 
-// initializeHandlers creates gRPC handlers
+// initializeHandlers creates gRPC and Gin handlers
 func (c *Container) initializeHandlers() {
 	c.GRPCHandler = handler.NewGRPCHandler(
+		c.Services.Auth,
+		c.Services.Authorization,
+		c.Services.Role,
+		c.Services.Permission,
+		c.Services.Casbin,
+		c.Logger,
+	)
+
+	c.GinHandler = handler.NewGinHandler(
 		c.Services.Auth,
 		c.Services.Authorization,
 		c.Services.Role,
