@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/tvttt/iam-services/internal/domain"
+	"log"
 )
 
 // UserRoleDAO defines the data access operations for UserRole relationship
@@ -57,7 +58,12 @@ func (d *userRoleDAO) GetUserRoles(ctx context.Context, userID string) ([]*domai
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 
 	var roles []*domain.Role
 	for rows.Next() {
@@ -90,7 +96,12 @@ func (d *userRoleDAO) GetRoleUsers(ctx context.Context, roleID string) ([]*domai
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 
 	var users []*domain.User
 	for rows.Next() {

@@ -12,7 +12,7 @@ on:
     - cron: '0 2 * * *'
 
 env:
-  GO_VERSION: '1.19'
+  GO_VERSION: '1.21'
 
 jobs:
   # ============================================
@@ -40,20 +40,50 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set service directory
+        run: |
+          if [ -d "ecommerce/back_end/iam-services" ]; then
+            echo "SERVICE_DIR=ecommerce/back_end/iam-services" >> $GITHUB_ENV
+          else
+            echo "SERVICE_DIR=." >> $GITHUB_ENV
+          fi
+
+      - name: Auth for private Go modules
+        run: |
+          go env -w GOPRIVATE=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOPROXY=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOSUMDB=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Normalize gokits dependency (CI)
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          if [ -d ../gokits ] || [ -d ../../back_end/gokits ] || [ -d ../../gokits ]; then
+            echo "Local gokits found - keep replace"
+          else
+            echo "Local gokits not found - switching to remote module"
+            go mod edit -replace github.com/tvttt/gokits=github.com/tuantv-organization-ecommerce/gokits@latest
+          fi
+
       - name: Download dependencies
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           go mod download
           go mod tidy
 
       - name: Run database migrations
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         env:
           PGPASSWORD: postgres
         run: |
@@ -65,7 +95,7 @@ jobs:
           psql -h localhost -U postgres -d iam_db_test -f migrations/006_seed_separated_authorization.sql
 
       - name: Run unit tests
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -78,15 +108,15 @@ jobs:
           go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Generate coverage report
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           go tool cover -html=coverage.out -o coverage.html
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: ecommerce/back_end/iam-services/coverage.html
+          path: ${{ env.SERVICE_DIR }}/coverage.html
           retention-days: 30
 
   # ============================================
@@ -114,20 +144,50 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set service directory
+        run: |
+          if [ -d "ecommerce/back_end/iam-services" ]; then
+            echo "SERVICE_DIR=ecommerce/back_end/iam-services" >> $GITHUB_ENV
+          else
+            echo "SERVICE_DIR=." >> $GITHUB_ENV
+          fi
+
+      - name: Auth for private Go modules
+        run: |
+          go env -w GOPRIVATE=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOPROXY=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOSUMDB=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Normalize gokits dependency (CI)
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          if [ -d ../gokits ] || [ -d ../../back_end/gokits ] || [ -d ../../gokits ]; then
+            echo "Local gokits found - keep replace"
+          else
+            echo "Local gokits not found - switching to remote module"
+            go mod edit -replace github.com/tvttt/gokits=github.com/tuantv-organization-ecommerce/gokits@latest
+          fi
+
       - name: Download dependencies
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           go mod download
           go mod tidy
 
       - name: Run database migrations
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         env:
           PGPASSWORD: postgres
         run: |
@@ -139,7 +199,7 @@ jobs:
           psql -h localhost -U postgres -d iam_db_test -f migrations/006_seed_separated_authorization.sql
 
       - name: Run integration tests
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -177,20 +237,50 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set service directory
+        run: |
+          if [ -d "ecommerce/back_end/iam-services" ]; then
+            echo "SERVICE_DIR=ecommerce/back_end/iam-services" >> $GITHUB_ENV
+          else
+            echo "SERVICE_DIR=." >> $GITHUB_ENV
+          fi
+
+      - name: Auth for private Go modules
+        run: |
+          go env -w GOPRIVATE=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOPROXY=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOSUMDB=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Normalize gokits dependency (CI)
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          if [ -d ../gokits ] || [ -d ../../back_end/gokits ] || [ -d ../../gokits ]; then
+            echo "Local gokits found - keep replace"
+          else
+            echo "Local gokits not found - switching to remote module"
+            go mod edit -replace github.com/tvttt/gokits=github.com/tuantv-organization-ecommerce/gokits@latest
+          fi
+
       - name: Download dependencies
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           go mod download
           go mod tidy
 
       - name: Run database migrations
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         env:
           PGPASSWORD: postgres
         run: |
@@ -202,7 +292,7 @@ jobs:
           psql -h localhost -U postgres -d iam_db_test -f migrations/006_seed_separated_authorization.sql
 
       - name: Run benchmark tests
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -215,9 +305,9 @@ jobs:
           go test -bench=. -benchmem -run=^$ ./... | tee benchmark.txt
 
       - name: Upload benchmark results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
-          path: ecommerce/back_end/iam-services/benchmark.txt
+          path: ${{ env.SERVICE_DIR }}/benchmark.txt
           retention-days: 30
 

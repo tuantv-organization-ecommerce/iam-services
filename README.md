@@ -1,7 +1,8 @@
 # IAM Service - Identity and Access Management
 
 **Version:** 1.0.0  
-**Go Version:** 1.19+  
+**Go Version:** 1.24  
+**Web Framework:** Gin v1.9.1  
 **Author:** E-commerce Platform Team
 
 ---
@@ -35,12 +36,14 @@ IAM Service là một hệ thống quản lý danh tính và phân quyền ngư�
 ### Điểm nổi bật
 
 - ✅ **Clean Architecture**: Tách biệt rõ ràng giữa các layers
+- ✅ **Gin Web Framework**: High-performance HTTP server với rich middleware
 - ✅ **Multi-Domain RBAC**: User, CMS, API domains với Casbin
-- ✅ **Dual Protocol**: gRPC (port 50051) + REST API (port 8080)
+- ✅ **Dual Protocol**: gRPC (port 50051) + Gin HTTP (port 8080)
 - ✅ **JWT Authentication**: Access token + Refresh token
 - ✅ **PostgreSQL**: Với connection pooling và migrations
 - ✅ **Logging**: Uber Zap với structured logging
 - ✅ **Panic Recovery**: Multi-layered recovery system
+- ✅ **Swagger UI**: Protected với Basic Authentication
 - ✅ **Shared GoKits**: Reusable infrastructure library
 
 ---
@@ -95,8 +98,10 @@ IAM Service là một hệ thống quản lý danh tính và phân quyền ngư�
 │                   ADAPTER LAYER                        │
 │              (Presentation/Interface)                   │
 │           • gRPC Handlers (grpc_handler.go)            │
+│           • Gin HTTP Handlers (gin_handler.go)         │
+│           • Gin Router (gin_router.go)                 │
 │           • Converters (converter.go)                  │
-│           • Middleware (recovery.go)                   │
+│           • Middleware (recovery.go, gin_middleware.go)│
 └────────────────────────────────────────────────────────┘
                             ↓
 ┌────────────────────────────────────────────────────────┐
@@ -128,20 +133,40 @@ IAM Service là một hệ thống quản lý danh tính và phân quyền ngư�
 
 ### Request Flow Example: Login
 
+#### gRPC Flow
 ```
-1. HTTP/gRPC Request → GRPCHandler.Login()
-                         ↓
+1. gRPC Request → GRPCHandler.Login()
+                        ↓
 2. Validate Input
-                         ↓
-3. LoginUseCase.Execute()
+                        ↓
+3. AuthService.Login()
    ├── UserRepository.GetByUsername()
    ├── PasswordService.CheckPassword()
    ├── AuthorizationRepository.GetUserRoles()
    └── TokenService.GenerateAccessToken()
-                         ↓
+                        ↓
 4. Convert to Protocol Buffer
-                         ↓
+                        ↓
 5. Response → Client
+```
+
+#### Gin HTTP Flow (NEW)
+```
+1. HTTP Request → Gin Router → GinHandler.Login()
+                        ↓
+2. Middleware Stack (Logger, CORS, Recovery)
+                        ↓
+3. Request Binding & Validation
+                        ↓
+4. AuthService.Login()
+   ├── UserRepository.GetByUsername()
+   ├── PasswordService.CheckPassword()
+   ├── AuthorizationRepository.GetUserRoles()
+   └── TokenService.GenerateAccessToken()
+                        ↓
+5. Convert to JSON Response
+                        ↓
+6. Response → Client
 ```
 
 ---
@@ -215,13 +240,18 @@ iam-services/
 │   │   ├── user_cms_role_dao.go
 │   │   └── api_resource_dao.go
 │   │
-│   ├── handler/                             # gRPC handlers
-│   │   ├── grpc_handler.go
+│   ├── handler/                             # Request handlers
+│   │   ├── grpc_handler.go                  # gRPC handlers
+│   │   ├── gin_handler.go                   # Gin HTTP handlers (NEW)
 │   │   ├── casbin_handler.go
 │   │   └── converter.go
 │   │
+│   ├── router/                              # Gin routing (NEW)
+│   │   └── gin_router.go
+│   │
 │   ├── middleware/
-│   │   └── recovery.go                      # Panic recovery
+│   │   ├── recovery.go                      # gRPC panic recovery
+│   │   └── gin_middleware.go                # Gin middleware (NEW)
 │   │
 │   ├── config/
 │   │   └── config.go
@@ -271,8 +301,9 @@ iam-services/
 ## 🛠️ Công nghệ
 
 ### Core Technologies
-- **Language**: Go 1.19+
-- **RPC Framework**: gRPC + gRPC Gateway
+- **Language**: Go 1.24
+- **Web Framework**: Gin v1.9.1 (NEW)
+- **RPC Framework**: gRPC
 - **Database**: PostgreSQL 12+
 - **Authorization**: Casbin v2
 - **Authentication**: JWT (golang-jwt/jwt/v5)
@@ -282,6 +313,8 @@ iam-services/
 
 ### Libraries & Dependencies
 ```
+github.com/gin-gonic/gin                     # Web framework (NEW)
+github.com/gin-contrib/cors                  # CORS middleware (NEW)
 github.com/casbin/casbin/v2                  # RBAC engine
 github.com/casbin/gorm-adapter/v3            # Casbin adapter
 github.com/golang-jwt/jwt/v5                 # JWT
@@ -292,7 +325,7 @@ google.golang.org/grpc                       # gRPC
 google.golang.org/protobuf                   # Protocol Buffers
 gorm.io/gorm                                 # ORM
 gorm.io/driver/postgres                      # PostgreSQL driver
-github.com/grpc-ecosystem/grpc-gateway/v2    # REST Gateway
+github.com/grpc-ecosystem/grpc-gateway/v2    # Gateway (for Swagger spec)
 github.com/tvttt/gokits                      # Shared utilities (local)
 ```
 
@@ -1382,15 +1415,250 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
 
 ### gRPC vs REST Comparison
 
-| Feature | gRPC | REST |
-|---------|------|------|
-| Port | 50051 | 8080 |
-| Protocol | HTTP/2 | HTTP/1.1 |
-| Format | Protobuf (binary) | JSON |
-| Performance | Cao hơn | Thấp hơn |
-| Client | Cần gRPC client | Bất kỳ HTTP client |
-| Browser Support | Giới hạn | Đầy đủ |
-| Debugging | Khó hơn | Dễ hơn |
+| Feature | gRPC | REST (Gateway) | REST (Gin) |
+|---------|------|----------------|------------|
+| Port | 50051 | 8080 | 8080 |
+| Protocol | HTTP/2 | HTTP/1.1 | HTTP/1.1 |
+| Format | Protobuf | JSON | JSON |
+| Performance | Cao nhất | Trung bình | Cao |
+| Client | gRPC client | HTTP client | HTTP client |
+| Browser Support | Giới hạn | Đầy đủ | Đầy đủ |
+| Routing | Proto | Proto+Gateway | Gin Router |
+| Middleware | gRPC | Limited | Đầy đủ |
+
+---
+
+## 🎨 Gin HTTP API (NEW)
+
+### Tổng quan
+
+IAM Service hiện sử dụng **Gin Web Framework** để handle REST API, thay thế cho gRPC Gateway. Gin mang lại:
+
+- ✅ **Performance cao**: Nhanh nhất trong Go web frameworks
+- ✅ **Flexible routing**: RESTful routing với params, query, body binding
+- ✅ **Rich middleware**: Logger, CORS, Recovery, Authentication
+- ✅ **Better error handling**: Consistent JSON error responses
+- ✅ **Easy testing**: Standard HTTP testing với httptest
+
+### Server Configuration
+
+- **HTTP Server**: `http://localhost:8080`
+- **gRPC Server**: `localhost:50051` (vẫn hoạt động song song)
+- **Health Check**: `GET http://localhost:8080/health`
+- **Swagger UI**: `http://localhost:8080/swagger/` (với Basic Auth)
+
+### API Endpoints
+
+#### Authentication
+```
+POST   /v1/auth/register     - Đăng ký user mới
+POST   /v1/auth/login        - Đăng nhập
+POST   /v1/auth/refresh      - Refresh access token
+POST   /v1/auth/logout       - Đăng xuất
+POST   /v1/auth/verify       - Verify token
+```
+
+#### Role Management
+```
+POST   /v1/roles             - Tạo role mới
+GET    /v1/roles             - List roles (page, page_size query params)
+GET    /v1/roles/:id         - Get role by ID
+PUT    /v1/roles/:id         - Update role
+DELETE /v1/roles/:id         - Delete role
+POST   /v1/roles/assign      - Assign role to user
+POST   /v1/roles/remove      - Remove role from user
+```
+
+#### User Roles
+```
+GET    /v1/users/:user_id/roles  - Get user's roles
+```
+
+#### Permission Management
+```
+POST   /v1/permissions           - Create permission
+GET    /v1/permissions           - List permissions
+DELETE /v1/permissions/:id       - Delete permission
+POST   /v1/permissions/check     - Check permission
+```
+
+#### Access Control
+```
+POST   /v1/access/api        - Check API access
+POST   /v1/access/cms        - Check CMS access
+```
+
+#### Policy Management
+```
+POST   /v1/policies/enforce  - Enforce authorization policy
+```
+
+#### CMS Management
+```
+POST   /v1/cms/roles         - Create CMS role
+GET    /v1/cms/roles         - List CMS roles
+POST   /v1/cms/roles/assign  - Assign CMS role
+POST   /v1/cms/roles/remove  - Remove CMS role
+GET    /v1/cms/users/:user_id/tabs  - Get user's CMS tabs
+```
+
+#### API Resources
+```
+POST   /v1/api/resources     - Create API resource
+GET    /v1/api/resources     - List API resources
+```
+
+### Middleware Stack
+
+1. **GinRecovery**: Panic recovery với logging
+2. **GinLogger**: Structured logging cho mỗi request
+3. **GinCORS**: CORS headers tự động
+4. **GinAuth**: JWT authentication (optional per route)
+
+### Request/Response Format
+
+#### Success Response
+```json
+{
+  "data": {
+    // Response data object
+  },
+  "message": "Optional success message"
+}
+```
+
+#### Error Response
+```json
+{
+  "error": "Error message",
+  "message": "Detailed explanation",
+  "code": 400
+}
+```
+
+### Example Usage
+
+#### Register và Login
+```bash
+# Register
+curl -X POST http://localhost:8080/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "john_doe",
+    "email": "john@example.com",
+    "password": "SecurePass123!",
+    "full_name": "John Doe"
+  }'
+
+# Login
+curl -X POST http://localhost:8080/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "john_doe",
+    "password": "SecurePass123!"
+  }'
+```
+
+#### Role Management
+```bash
+# Create role
+curl -X POST http://localhost:8080/v1/roles \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "product_manager",
+    "description": "Can manage products",
+    "permission_ids": ["perm-1", "perm-2"]
+  }'
+
+# List roles with pagination
+curl "http://localhost:8080/v1/roles?page=1&page_size=10"
+
+# Get specific role
+curl "http://localhost:8080/v1/roles/role-123"
+
+# Assign role to user
+curl -X POST http://localhost:8080/v1/roles/assign \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user-123",
+    "role_id": "role-456"
+  }'
+```
+
+#### CMS Access Control
+```bash
+# Create CMS role
+curl -X POST http://localhost:8080/v1/cms/roles \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "cms_editor",
+    "description": "CMS Editor role",
+    "tabs": ["product", "inventory", "order"]
+  }'
+
+# Check CMS access
+curl -X POST http://localhost:8080/v1/access/cms \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user-123",
+    "cms_tab": "product",
+    "action": "POST"
+  }'
+
+# Get user's CMS tabs
+curl "http://localhost:8080/v1/cms/users/user-123/tabs"
+```
+
+### Integration với Swagger UI
+
+Swagger UI vẫn hoạt động và được serve bởi Gin router:
+
+```bash
+# Access Swagger UI (requires Basic Auth)
+# Username: admin (default, configurable via SWAGGER_AUTH_USERNAME)
+# Password: changeme (default, configurable via SWAGGER_AUTH_PASSWORD)
+open http://localhost:8080/swagger/
+```
+
+### Configuration
+
+Gin server được cấu hình qua environment variables:
+
+```bash
+# Server configuration
+HTTP_PORT=8080                    # Gin HTTP server port
+GRPC_PORT=50051                   # gRPC server port (vẫn hoạt động)
+
+# Swagger configuration  
+SWAGGER_ENABLED=true
+SWAGGER_BASE_PATH=/swagger/
+SWAGGER_SPEC_PATH=/swagger.json
+SWAGGER_AUTH_USERNAME=admin
+SWAGGER_AUTH_PASSWORD=changeme
+SWAGGER_AUTH_REALM="IAM Service API Documentation"
+
+# Log configuration
+LOG_LEVEL=debug                   # Gin runs in debug mode if LOG_LEVEL=debug
+```
+
+### Benefits của Gin
+
+1. **Performance**: Gin is one of the fastest Go web frameworks
+2. **Clean Code**: Intuitive API, easy to maintain
+3. **Rich Ecosystem**: Extensive middleware collection
+4. **Better Testing**: Standard Go HTTP testing
+5. **Flexible Routing**: Path parameters, query params, request binding
+6. **Error Handling**: Consistent error responses
+7. **Production Ready**: Used by many companies in production
+
+### Dual Protocol Support
+
+Service vẫn hỗ trợ cả gRPC và HTTP:
+
+- **gRPC** (port 50051): For microservice-to-microservice communication
+- **Gin HTTP** (port 8080): For external clients, web apps, mobile apps
+
+Cả hai protocol đều sử dụng chung business logic (services, repositories).
 
 ---
 

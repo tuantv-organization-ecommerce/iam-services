@@ -6,9 +6,12 @@ import (
 )
 
 var (
+	// ErrInvalidPermission indicates an invalid permission entity
 	ErrInvalidPermission = errors.New("invalid permission")
-	ErrEmptyResource     = errors.New("resource cannot be empty")
-	ErrEmptyAction       = errors.New("action cannot be empty")
+	// ErrEmptyResource indicates resource field is empty
+	ErrEmptyResource = errors.New("resource cannot be empty")
+	// ErrEmptyAction indicates action field is empty
+	ErrEmptyAction = errors.New("action cannot be empty")
 )
 
 // Permission represents a permission entity in the domain
@@ -50,12 +53,26 @@ func ReconstructPermission(id, name, resource, action, description string, creat
 }
 
 // Getters
-func (p *Permission) ID() string           { return p.id }
-func (p *Permission) Name() string         { return p.name }
-func (p *Permission) Resource() string     { return p.resource }
-func (p *Permission) Action() string       { return p.action }
-func (p *Permission) Description() string  { return p.description }
+
+// ID returns the permission's unique identifier
+func (p *Permission) ID() string { return p.id }
+
+// Name returns the permission's name
+func (p *Permission) Name() string { return p.name }
+
+// Resource returns the resource this permission applies to
+func (p *Permission) Resource() string { return p.resource }
+
+// Action returns the action this permission allows
+func (p *Permission) Action() string { return p.action }
+
+// Description returns the permission's description
+func (p *Permission) Description() string { return p.description }
+
+// CreatedAt returns when the permission was created
 func (p *Permission) CreatedAt() time.Time { return p.createdAt }
+
+// UpdatedAt returns when the permission was last updated
 func (p *Permission) UpdatedAt() time.Time { return p.updatedAt }
 
 // Matches checks if this permission matches the given resource and action

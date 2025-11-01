@@ -6,12 +6,18 @@ import (
 )
 
 var (
-	ErrInvalidUsername     = errors.New("invalid username")
-	ErrInvalidEmail        = errors.New("invalid email")
-	ErrUserAlreadyActive   = errors.New("user is already active")
+	// ErrInvalidUsername indicates username validation failed
+	ErrInvalidUsername = errors.New("invalid username")
+	// ErrInvalidEmail indicates email validation failed
+	ErrInvalidEmail = errors.New("invalid email")
+	// ErrUserAlreadyActive indicates user is already in active state
+	ErrUserAlreadyActive = errors.New("user is already active")
+	// ErrUserAlreadyInactive indicates user is already in inactive state
 	ErrUserAlreadyInactive = errors.New("user is already inactive")
-	ErrPasswordTooShort    = errors.New("password is too short")
-	ErrEmptyPassword       = errors.New("password cannot be empty")
+	// ErrPasswordTooShort indicates password does not meet minimum length
+	ErrPasswordTooShort = errors.New("password is too short")
+	// ErrEmptyPassword indicates password field is empty
+	ErrEmptyPassword = errors.New("password cannot be empty")
 )
 
 // User represents a user aggregate root in the domain
@@ -58,14 +64,32 @@ func ReconstructUser(id, username, email, passwordHash, fullName string, isActiv
 }
 
 // Getters
-func (u *User) ID() string           { return u.id }
-func (u *User) Username() string     { return u.username }
-func (u *User) Email() string        { return u.email }
+
+// ID returns the user's unique identifier
+func (u *User) ID() string { return u.id }
+
+// Username returns the user's username
+func (u *User) Username() string { return u.username }
+
+// Email returns the user's email address
+func (u *User) Email() string { return u.email }
+
+// PasswordHash returns the user's hashed password
 func (u *User) PasswordHash() string { return u.passwordHash }
-func (u *User) FullName() string     { return u.fullName }
-func (u *User) IsActive() bool       { return u.isActive }
-func (u *User) Roles() []string      { return u.roles }
+
+// FullName returns the user's full name
+func (u *User) FullName() string { return u.fullName }
+
+// IsActive returns whether the user account is active
+func (u *User) IsActive() bool { return u.isActive }
+
+// Roles returns the user's assigned roles
+func (u *User) Roles() []string { return u.roles }
+
+// CreatedAt returns when the user was created
 func (u *User) CreatedAt() time.Time { return u.createdAt }
+
+// UpdatedAt returns when the user was last updated
 func (u *User) UpdatedAt() time.Time { return u.updatedAt }
 
 // SetPasswordHash sets the hashed password

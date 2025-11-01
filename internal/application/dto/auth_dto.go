@@ -1,3 +1,5 @@
+// Package dto provides Data Transfer Objects for application layer communication.
+// It contains request/response structures for authentication and authorization operations.
 package dto
 
 // RegisterRequest represents user registration input
@@ -55,6 +57,17 @@ type VerifyTokenResponse struct {
 	UserID  string   `json:"user_id"`
 	Roles   []string `json:"roles"`
 	Message string   `json:"message"`
+}
+
+// LogoutRequest represents logout input
+type LogoutRequest struct {
+	UserID string `json:"user_id" validate:"required"`
+	Token  string `json:"token" validate:"required"`
+}
+
+// LogoutResponse represents logout output
+type LogoutResponse struct {
+	Message string `json:"message"`
 }
 
 // UserDTO represents user data transfer object

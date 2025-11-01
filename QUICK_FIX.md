@@ -129,7 +129,7 @@ Sau khi chạy script, bạn sẽ có:
 
 ```
 pkg/proto/
-├── iam.pb.go                      # gRPC message types
+├── iam.pb.go                     # gRPC message types
 ├── iam_grpc.pb.go                # gRPC service
 ├── iam_gateway.pb.go             # Gateway message types
 ├── iam_gateway.pb.gw.go          # Gateway handlers ✅
@@ -196,3 +196,8 @@ Service **CAN RUN** với gRPC only:
 
 Sau khi generate proto files → Uncomment code → Full features! 🚀
 
+# golangci-lint
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.2
+$env:PATH += ";$env:GOPATH\bin"   # current session
+# Optional permanent: setx PATH "$($env:PATH);$env:GOPATH\bin"
+golangci-lint version

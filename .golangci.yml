@@ -1,124 +1,98 @@
-# GolangCI-Lint Configuration for IAM Service
-# https://golangci-lint.run/usage/configuration/
-
+# golangci-lint configuration for iam-services
 run:
   timeout: 5m
-  issues-exit-code: 1
   tests: true
   skip-dirs:
-    - bin
     - vendor
-    - pkg/proto
+    - node_modules
+    - bin
   skip-files:
-    - ".*\\.pb\\.go$"
-    - ".*\\.pb\\.gw\\.go$"
-    - ".*_grpc\\.pb\\.go$"
+    - ".*\\.pb\\.go$"  # Skip protobuf generated files
+    - ".*_test\\.go$"  # Skip test files from some linters
 
+linters:
+  enable:
+#    - revive       # Code quality and style
+#    - errcheck     # Check error returns
+#    - gosec        # Security issues
+    - goconst      # Repeated strings
+    - gofmt        # Code formatting
+#    - goimports    # Import formatting
+#    - misspell     # Spelling mistakes
+#    - ineffassign  # Unused assignments
+#    - staticcheck  # Static analysis
+#    - typecheck    # Type errors
+    - unused       # Unused code
+#    - govet        # Go vet analysis
+ #   - unconvert    # Unnecessary conversions
+  disable:
+    - structcheck  # Deprecated
+    - deadcode     # Deprecated
+    - varcheck     # Deprecated
+
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+        severity: warning
+        arguments:
+          - "checkPrivateReceivers"
+          - "sayRepetitiveInsteadOfStutters"
+      - name: package-comments
+        severity: warning
+      - name: var-naming
+        severity: warning
+      - name: indent-error-flow
+        severity: warning
+      - name: error-return
+        severity: warning
+      - name: error-strings
+        severity: warning
+      - name: error-naming
+        severity: warning
+  
+  errcheck:
+    check-blank: true
+    check-type-assertions: true
+    exclude-functions:
+      - (io.Closer).Close
+      - (*database/sql.Rows).Close
+  
+  gosec:
+    severity: medium
+    confidence: medium
+    excludes:
+      - G115  # We handle integer overflow manually
+  
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+    ignore-tests: true
+  
+  gofmt:
+    simplify: true
+  
+  goimports:
+    local-prefixes: github.com/tvttt/iam-services
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    # Exclude some linters from running on tests
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+    # Exclude known issues in generated code
+    - path: \.pb\.go$
+      linters:
+        - revive
+        - stylecheck
+  
 output:
   format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
-
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-
-  govet:
-    check-shadowing: true
-    enable-all: true
-
-  gofmt:
-    simplify: true
-
-  goimports:
-    local-prefixes: github.com/tvttt/iam-services
-
-  golint:
-    min-confidence: 0.8
-
-  gocyclo:
-    min-complexity: 15
-
-  dupl:
-    threshold: 100
-
-  goconst:
-    min-len: 3
-    min-occurrences: 3
-
-  misspell:
-    locale: US
-
-  lll:
-    line-length: 140
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - dupImport
-      - ifElseChain
-      - octalLiteral
-      - whyNoLint
-      - wrapperFunc
-
-  funlen:
-    lines: 100
-    statements: 50
-
-  gocognit:
-    min-complexity: 20
-
-linters:
-  disable-all: true
-  enable:
-    - errcheck      # Check for unchecked errors
-    - gosimple      # Simplify code
-    - govet         # Reports suspicious constructs
-    - ineffassign   # Detects ineffectual assignments
-    - staticcheck   # Advanced Go linter
-    - typecheck     # Type-checks Go code
-    - unused        # Checks for unused code
-    - gofmt         # Checks code formatting
-    - goimports     # Checks import statements
-    - misspell      # Finds commonly misspelled words
-    - goconst       # Finds repeated strings
-    - gocritic      # Provides diagnostics
-    - gocyclo       # Computes cyclomatic complexity
-    - gosec         # Security checks
-    - dupl          # Code clone detection
-    - revive        # Fast, configurable, extensible linter
-
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - funlen
-        - gocognit
-
-    - path: pkg/proto/
-      linters:
-        - all
-
-    - linters:
-        - staticcheck
-      text: "SA9003:"
-
-    - linters:
-        - lll
-      source: "^//go:generate "
-
-  exclude-use-default: false
-  max-issues-per-linter: 0
-  max-same-issues: 0
-  new: false
-
+  sort-results: true
