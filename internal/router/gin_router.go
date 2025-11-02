@@ -150,4 +150,3 @@ func setupSwagger(r *gin.Engine, cfg *config.Config, logger *zap.Logger) {
 		zap.String("spec", cfg.Swagger.SpecPath),
 	)
 }
-
