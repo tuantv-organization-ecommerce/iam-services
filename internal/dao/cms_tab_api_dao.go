@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"log"
 )
 
 // CMSTabAPI represents a mapping between CMS tab and API endpoint
@@ -46,7 +47,7 @@ func (d *cmsTabAPIDAO) Create(ctx context.Context, tabAPI *CMSTabAPI) error {
 	if tabAPI.ID == "" {
 		tabAPI.ID = uuid.New().String()
 	}
-	
+
 	now := time.Now()
 	tabAPI.CreatedAt = now
 	tabAPI.UpdatedAt = now
@@ -114,7 +115,12 @@ func (d *cmsTabAPIDAO) FindByTab(ctx context.Context, tabName string) ([]*CMSTab
 	if err != nil {
 		return nil, fmt.Errorf("failed to find cms tab-apis by tab: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 
 	var tabAPIs []*CMSTabAPI
 	for rows.Next() {
@@ -149,7 +155,12 @@ func (d *cmsTabAPIDAO) FindByAPI(ctx context.Context, apiPath, method string) ([
 	if err != nil {
 		return nil, fmt.Errorf("failed to find cms tab-apis by api: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 
 	var tabAPIs []*CMSTabAPI
 	for rows.Next() {
@@ -183,7 +194,12 @@ func (d *cmsTabAPIDAO) ListAll(ctx context.Context) ([]*CMSTabAPI, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list cms tab-apis: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 
 	var tabAPIs []*CMSTabAPI
 	for rows.Next() {
@@ -287,4 +303,3 @@ func (d *cmsTabAPIDAO) Exists(ctx context.Context, tabName, apiPath, method stri
 
 	return exists, nil
 }
-

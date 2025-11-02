@@ -102,7 +102,7 @@ message CustomHttpPattern {
     }
 }
 
-Write-Host "✓ Google API protos ready" -ForegroundColor Green
+Write-Host "Google API protos ready" -ForegroundColor Green
 
 # Step 3: Generate Gateway and OpenAPI files
 Write-Host "`n[3/3] Generating Gateway and OpenAPI files..." -ForegroundColor Yellow

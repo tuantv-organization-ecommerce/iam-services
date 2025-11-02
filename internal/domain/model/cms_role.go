@@ -6,8 +6,10 @@ import (
 )
 
 var (
+	// ErrInvalidCMSRole indicates an invalid CMS role entity
 	ErrInvalidCMSRole = errors.New("invalid CMS role")
-	ErrEmptyTabs      = errors.New("CMS role must have at least one tab")
+	// ErrEmptyTabs indicates CMS role has no tabs assigned
+	ErrEmptyTabs = errors.New("CMS role must have at least one tab")
 )
 
 // CMSTab represents a CMS tab/section
@@ -58,11 +60,23 @@ func ReconstructCMSRole(id, name, description string, tabs []CMSTab, createdAt, 
 }
 
 // Getters
-func (c *CMSRole) ID() string           { return c.id }
-func (c *CMSRole) Name() string         { return c.name }
-func (c *CMSRole) Description() string  { return c.description }
-func (c *CMSRole) Tabs() []CMSTab       { return c.tabs }
+
+// ID returns the CMS role's unique identifier
+func (c *CMSRole) ID() string { return c.id }
+
+// Name returns the CMS role's name
+func (c *CMSRole) Name() string { return c.name }
+
+// Description returns the CMS role's description
+func (c *CMSRole) Description() string { return c.description }
+
+// Tabs returns the CMS tabs assigned to this role
+func (c *CMSRole) Tabs() []CMSTab { return c.tabs }
+
+// CreatedAt returns when the CMS role was created
 func (c *CMSRole) CreatedAt() time.Time { return c.createdAt }
+
+// UpdatedAt returns when the CMS role was last updated
 func (c *CMSRole) UpdatedAt() time.Time { return c.updatedAt }
 
 // UpdateDetails updates CMS role details

@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 env:
-  GO_VERSION: '1.19'
+  GO_VERSION: '1.21'
   REGISTRY: docker.io
   IMAGE_NAME: iam-service
   
@@ -29,14 +29,44 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Go
+      - name: Set service directory
+        run: |
+          if [ -d "ecommerce/back_end/iam-services" ]; then
+            echo "SERVICE_DIR=ecommerce/back_end/iam-services" >> $GITHUB_ENV
+          else
+            echo "SERVICE_DIR=." >> $GITHUB_ENV
+          fi
+
+      - name: Auth for private Go modules
+        run: |
+          go env -w GOPRIVATE=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOPROXY=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOSUMDB=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Setup Go (lint uses Go 1.23)
         uses: actions/setup-go@v4
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version: '1.23'
           cache: true
 
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Normalize gokits dependency (CI)
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          if [ -d ../gokits ] || [ -d ../../back_end/gokits ] || [ -d ../../gokits ]; then
+            echo "Local gokits found - keep replace"
+          else
+            echo "Local gokits not found - switching to remote module"
+            go mod edit -replace github.com/tvttt/gokits=github.com/tuantv-organization-ecommerce/gokits@latest
+          fi
+
       - name: Download dependencies
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           go mod download
           go mod tidy
@@ -45,11 +75,11 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
-          working-directory: ecommerce/back_end/iam-services
+          working-directory: ${{ env.SERVICE_DIR }}
           args: --timeout=5m
 
       - name: Check code formatting
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
             echo "Code is not formatted. Run 'make fmt'"
@@ -58,7 +88,7 @@ jobs:
           fi
 
       - name: Run go vet
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: go vet ./...
 
   # ============================================
@@ -87,14 +117,39 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set service directory
+        run: |
+          if [ -d "ecommerce/back_end/iam-services" ]; then
+            echo "SERVICE_DIR=ecommerce/back_end/iam-services" >> $GITHUB_ENV
+          else
+            echo "SERVICE_DIR=." >> $GITHUB_ENV
+          fi
+
+      - name: Auth for private Go modules
+        run: |
+          go env -w GOPRIVATE=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOPROXY=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOSUMDB=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
+      - name: Normalize gokits dependency (CI)
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          if [ -d ../gokits ] || [ -d ../../back_end/gokits ] || [ -d ../../gokits ]; then
+            echo "Local gokits found - keep replace"
+          else
+            echo "Local gokits not found - switching to remote module"
+            go mod edit -replace github.com/tvttt/gokits=github.com/tuantv-organization-ecommerce/gokits@latest
+          fi
+
       - name: Download dependencies
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           go mod download
           go mod tidy
@@ -107,7 +162,7 @@ jobs:
           done
 
       - name: Run database migrations
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         env:
           PGPASSWORD: postgres
         run: |
@@ -119,7 +174,7 @@ jobs:
           psql -h localhost -U postgres -d iam_db_test -f migrations/006_seed_separated_authorization.sql
 
       - name: Run tests with coverage
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         env:
           DB_HOST: localhost
           DB_PORT: 5432
@@ -134,9 +189,11 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          file: ./ecommerce/back_end/iam-services/coverage.out
+          file: ./${{ env.SERVICE_DIR }}/coverage.out
           flags: unittests
           name: codecov-iam-service
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   # ============================================
   # JOB 3: Build Application
@@ -149,59 +206,93 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set service directory
+        run: |
+          if [ -d "ecommerce/back_end/iam-services" ]; then
+            echo "SERVICE_DIR=ecommerce/back_end/iam-services" >> $GITHUB_ENV
+          else
+            echo "SERVICE_DIR=." >> $GITHUB_ENV
+          fi
+
+      - name: Auth for private Go modules
+        run: |
+          go env -w GOPRIVATE=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOPROXY=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          go env -w GONOSUMDB=github.com/tvttt/*,github.com/tuantv-organization-ecommerce/*
+          git config --global url."https://x-access-token:${{ secrets.GH_PAT }}@github.com/".insteadOf "https://github.com/"
+
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
+      - name: Normalize gokits dependency (CI)
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          if [ -d ../gokits ] || [ -d ../../back_end/gokits ] || [ -d ../../gokits ]; then
+            echo "Local gokits found - keep replace"
+          else
+            echo "Local gokits not found - switching to remote module"
+            go mod edit -replace github.com/tvttt/gokits=github.com/tuantv-organization-ecommerce/gokits@latest
+          fi
+
       - name: Download dependencies
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           go mod download
           go mod tidy
 
       - name: Build binary
-        working-directory: ecommerce/back_end/iam-services
+        working-directory: ${{ env.SERVICE_DIR }}
         run: |
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags="-w -s" -o bin/iam-service cmd/server/main.go
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: iam-service-binary
-          path: ecommerce/back_end/iam-services/bin/iam-service
+          path: ${{ env.SERVICE_DIR }}/bin/iam-service
           retention-days: 7
 
   # ============================================
   # JOB 4: Security Scan
   # ============================================
   security:
-    name: 🔒 Security Scan
+    name: Security Scan (Trivy → SARIF)
     runs-on: ubuntu-latest
-    needs: lint
+    permissions:
+      contents: read
+      security-events: write
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+      # Run Trivy against the repository (filesystem). If you prefer scanning an image, switch scan-type to 'image' and set image-ref.
+      - name: Run Trivy (SARIF)
+        uses: aquasecurity/trivy-action@0.26.0
         with:
-          scan-type: 'fs'
-          scan-ref: 'ecommerce/back_end/iam-services'
+          scan-type: 'fs'                 # 'fs' scans code; use 'image' to scan a container image
+          ignore-unfixed: true
           format: 'sarif'
-          output: 'trivy-results.sarif'
+          output: 'trivy-results.sarif'   # Ensure this matches the upload steps
+          exit-code: '0'                  # Don't fail the job on findings (adjust to your policy)
 
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
+      # Always upload the SARIF as an artifact so you can download it, including on forked PRs
+      - name: Upload SARIF as artifact
+        if: ${{ hashFiles('trivy-results.sarif') != '' }}
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: 'trivy-results.sarif'
+          name: trivy-sarif
+          path: trivy-results.sarif
+          if-no-files-found: error
 
-      - name: Run gosec security scanner
-        uses: securego/gosec@master
+      # Only upload to GitHub Code Scanning when the workflow has permission (not a PR from a fork)
+      - name: Upload SARIF to GitHub Code Scanning
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+        uses: github/codeql-action/upload-sarif@v4
         with:
-          args: '-no-fail -fmt sarif -out gosec-results.sarif ./ecommerce/back_end/iam-services/...'
+          sarif_file: trivy-results.sarif
 
   # ============================================
   # JOB 5: Build & Push Docker Image

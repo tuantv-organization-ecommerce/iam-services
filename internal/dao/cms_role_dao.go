@@ -6,6 +6,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/tvttt/iam-services/internal/domain"
+	"log"
 )
 
 // CMSRoleDAO defines the data access operations for CMS roles
@@ -124,7 +125,12 @@ func (d *cmsRoleDAO) List(ctx context.Context, limit, offset int) ([]*domain.CMS
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 
 	var roles []*domain.CMSRole
 	for rows.Next() {

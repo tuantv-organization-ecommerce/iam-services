@@ -7,6 +7,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testPassword = "MySecurePassword123!"
+)
+
 func TestNewPasswordManager(t *testing.T) {
 	manager := NewPasswordManager()
 	assert.NotNil(t, manager)
@@ -14,7 +18,7 @@ func TestNewPasswordManager(t *testing.T) {
 
 func TestHashPassword_Success(t *testing.T) {
 	manager := NewPasswordManager()
-	password := "MySecurePassword123!"
+	password := testPassword
 
 	hash, err := manager.HashPassword(password)
 
@@ -36,7 +40,7 @@ func TestHashPassword_EmptyPassword(t *testing.T) {
 
 func TestCheckPassword_Success(t *testing.T) {
 	manager := NewPasswordManager()
-	password := "MySecurePassword123!"
+	password := testPassword
 
 	// Hash the password
 	hash, err := manager.HashPassword(password)
@@ -49,7 +53,7 @@ func TestCheckPassword_Success(t *testing.T) {
 
 func TestCheckPassword_WrongPassword(t *testing.T) {
 	manager := NewPasswordManager()
-	password := "MySecurePassword123!"
+	password := testPassword
 	wrongPassword := "WrongPassword456!"
 
 	// Hash the password
@@ -63,7 +67,7 @@ func TestCheckPassword_WrongPassword(t *testing.T) {
 
 func TestCheckPassword_InvalidHash(t *testing.T) {
 	manager := NewPasswordManager()
-	password := "MySecurePassword123!"
+	password := testPassword
 	invalidHash := "invalid-hash-string"
 
 	// Check with invalid hash
@@ -73,7 +77,7 @@ func TestCheckPassword_InvalidHash(t *testing.T) {
 
 func TestHashPassword_DifferentHashesForSamePassword(t *testing.T) {
 	manager := NewPasswordManager()
-	password := "MySecurePassword123!"
+	password := testPassword
 
 	// Generate two hashes for the same password
 	hash1, err := manager.HashPassword(password)
@@ -92,7 +96,7 @@ func TestHashPassword_DifferentHashesForSamePassword(t *testing.T) {
 
 func TestCheckPassword_CaseSensitive(t *testing.T) {
 	manager := NewPasswordManager()
-	password := "MySecurePassword123!"
+	password := testPassword
 
 	hash, err := manager.HashPassword(password)
 	require.NoError(t, err)

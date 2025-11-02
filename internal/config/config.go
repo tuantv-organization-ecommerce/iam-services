@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"log"
 )
 
 // Config holds all configuration for the application
@@ -51,16 +52,22 @@ type LogConfig struct {
 
 // SwaggerConfig holds Swagger UI configuration
 type SwaggerConfig struct {
-	Enabled  bool
-	BasePath string
-	SpecPath string
-	Title    string
+	Enabled      bool
+	BasePath     string
+	SpecPath     string
+	Title        string
+	AuthUsername string
+	AuthPassword string
+	AuthRealm    string
 }
 
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
-	// Try to load .env file (ignore error if not found)
-	_ = godotenv.Load()
+	// Try to load .env file (optional)
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Error loading .env file: %v", err)
+		return nil, err
+	}
 
 	config := &Config{
 		Server: ServerConfig{
@@ -87,10 +94,13 @@ func Load() (*Config, error) {
 			Encoding: getEnv("LOG_ENCODING", "json"),
 		},
 		Swagger: SwaggerConfig{
-			Enabled:  getBoolEnv("SWAGGER_ENABLED", true),
-			BasePath: getEnv("SWAGGER_BASE_PATH", "/swagger/"),
-			SpecPath: getEnv("SWAGGER_SPEC_PATH", "/swagger.json"),
-			Title:    getEnv("SWAGGER_TITLE", "IAM Service API Documentation"),
+			Enabled:      getBoolEnv("SWAGGER_ENABLED", true),
+			BasePath:     getEnv("SWAGGER_BASE_PATH", "/swagger/"),
+			SpecPath:     getEnv("SWAGGER_SPEC_PATH", "/swagger.json"),
+			Title:        getEnv("SWAGGER_TITLE", "IAM Service API Documentation"),
+			AuthUsername: getEnv("SWAGGER_AUTH_USERNAME", "admin"),
+			AuthPassword: getEnv("SWAGGER_AUTH_PASSWORD", "changeme"),
+			AuthRealm:    getEnv("SWAGGER_AUTH_REALM", "IAM Service API Documentation"),
 		},
 	}
 

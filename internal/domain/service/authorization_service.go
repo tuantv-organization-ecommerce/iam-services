@@ -6,9 +6,12 @@ import "context"
 type CasbinDomain string
 
 const (
+	// DomainUser represents the user domain for authorization
 	DomainUser CasbinDomain = "user"
-	DomainCMS  CasbinDomain = "cms"
-	DomainAPI  CasbinDomain = "api"
+	// DomainCMS represents the CMS domain for authorization
+	DomainCMS CasbinDomain = "cms"
+	// DomainAPI represents the API domain for authorization
+	DomainAPI CasbinDomain = "api"
 )
 
 // AuthorizationService defines the contract for Casbin authorization

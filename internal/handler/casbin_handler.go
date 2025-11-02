@@ -230,6 +230,6 @@ func (h *GRPCHandler) ListAPIResources(ctx context.Context, req *pb.ListAPIResou
 
 	return &pb.ListAPIResourcesResponse{
 		Resources: pbResources,
-		Total:     int32(len(pbResources)),
+		Total:     safeIntToInt32(len(pbResources)),
 	}, nil
 }

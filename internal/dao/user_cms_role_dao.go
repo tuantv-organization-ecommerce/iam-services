@@ -6,6 +6,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/tvttt/iam-services/internal/domain"
+	"log"
 )
 
 // UserCMSRoleDAO defines the data access operations for UserCMSRole relationship
@@ -59,7 +60,12 @@ func (d *userCMSRoleDAO) GetUserCMSRoles(ctx context.Context, userID string) ([]
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 
 	var roles []*domain.CMSRole
 	for rows.Next() {
@@ -99,7 +105,12 @@ func (d *userCMSRoleDAO) GetCMSRoleUsers(ctx context.Context, cmsRoleID string) 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		err = rows.Close()
+		if err != nil {
+			log.Println("Error closing rows:", err)
+		}
+	}()
 
 	var userIDs []string
 	for rows.Next() {
