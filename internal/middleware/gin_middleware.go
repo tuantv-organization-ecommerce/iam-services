@@ -94,4 +94,3 @@ func GinAuth(jwtSecret string, logger *zap.Logger) gin.HandlerFunc {
 		c.Next()
 	}
 }
-
