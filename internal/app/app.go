@@ -78,9 +78,10 @@ func (a *App) Initialize() error {
 			return fmt.Errorf("failed to connect to database: %w", err)
 		}
 		a.db = db
+		a.logger.Info("Database connected successfully")
 
-		// Initialize Casbin enforcer
-		casbinEnforcer, err := casbinPkg.NewEnforcer(db, "configs/rbac_model.conf", a.logger)
+		// Initialize Casbin enforcer with separate connection
+		casbinEnforcer, err := casbinPkg.NewEnforcer(a.config.Database.GetDSN(), "configs/rbac_model.conf", a.logger)
 		if err != nil {
 			return fmt.Errorf("failed to initialize Casbin enforcer: %w", err)
 		}

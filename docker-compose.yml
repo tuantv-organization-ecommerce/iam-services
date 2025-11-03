@@ -20,7 +20,9 @@ services:
       retries: 5
 
   iam-service:
-    build: .
+    build:
+      context: ..
+      dockerfile: iam-services/Dockerfile
     container_name: iam-service
     environment:
       SERVER_HOST: 0.0.0.0

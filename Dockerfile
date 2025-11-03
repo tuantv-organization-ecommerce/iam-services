@@ -6,12 +6,18 @@ RUN apk add --no-cache git make
 
 WORKDIR /app
 
+# Copy gokits dependency first (needed for local replace directive)
+COPY gokits/ ./gokits/
+
+# Copy iam-services files
+WORKDIR /app/iam-services
+
 # Copy go mod files
-COPY go.mod go.sum ./
+COPY iam-services/go.mod iam-services/go.sum ./
 RUN go mod download
 
 # Copy source code
-COPY . .
+COPY iam-services/ ./
 
 # Build the application
 RUN go build -o bin/iam-service cmd/server/main.go
@@ -24,10 +30,13 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=builder /app/bin/iam-service .
+COPY --from=builder /app/iam-services/bin/iam-service .
 
 # Copy migrations (optional, for reference)
-COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/iam-services/migrations ./migrations
+
+# Copy configs (required for Casbin models)
+COPY --from=builder /app/iam-services/configs ./configs
 
 # Expose gRPC port
 EXPOSE 50051

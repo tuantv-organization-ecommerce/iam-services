@@ -1,7 +1,6 @@
 package casbin
 
 import (
-	"database/sql"
 	"fmt"
 
 	"github.com/casbin/casbin/v2"
@@ -19,18 +18,12 @@ type Enforcer struct {
 }
 
 // NewEnforcer creates a new Casbin enforcer instance
-func NewEnforcer(db *sql.DB, modelPath string, logger *zap.Logger) (*Enforcer, error) {
-	// Get DSN from database connection
-	var dsn string
-	err := db.QueryRow("SELECT current_database()").Scan(&dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get database name: %w", err)
-	}
-
-	// Create GORM DB instance for Casbin adapter
-	gormDB, err := gorm.Open(postgres.New(postgres.Config{
-		Conn: db,
-	}), &gorm.Config{})
+// Uses DSN to create a separate GORM connection to avoid prepared statement conflicts
+func NewEnforcer(dsn string, modelPath string, logger *zap.Logger) (*Enforcer, error) {
+	// Create a separate GORM DB instance for Casbin adapter to avoid connection conflicts
+	gormDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		PrepareStmt: false, // Disable prepared statements to avoid parameter mismatch errors
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GORM DB: %w", err)
 	}
