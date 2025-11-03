@@ -19,6 +19,7 @@ import (
 
 	"github.com/tvttt/gokits/logger"
 
+	"github.com/tvttt/iam-services/internal/cache"
 	"github.com/tvttt/iam-services/internal/config"
 	"github.com/tvttt/iam-services/internal/container"
 	"github.com/tvttt/iam-services/internal/database"
@@ -30,12 +31,13 @@ import (
 
 // App represents the IAM service application
 type App struct {
-	config     *config.Config
-	logger     *zap.Logger
-	container  *container.Container
-	db         *sql.DB
-	grpcServer *grpc.Server
-	httpServer *http.Server
+	config      *config.Config
+	logger      *zap.Logger
+	container   *container.Container
+	db          *sql.DB
+	redisClient *cache.RedisClient
+	grpcServer  *grpc.Server
+	httpServer  *http.Server
 }
 
 // New creates a new App instance
@@ -80,6 +82,20 @@ func (a *App) Initialize() error {
 		a.db = db
 		a.logger.Info("Database connected successfully")
 
+		// Initialize Redis client
+		redisClient, err := cache.NewRedisClient(
+			a.config.Redis.GetAddress(),
+			a.config.Redis.Password,
+			a.config.Redis.DB,
+			a.logger,
+		)
+		if err != nil {
+			a.logger.Warn("Failed to connect to Redis, token storage will be disabled", zap.Error(err))
+			// Continue without Redis - not critical for core functionality
+		} else {
+			a.redisClient = redisClient
+		}
+
 		// Initialize Casbin enforcer with separate connection
 		casbinEnforcer, err := casbinPkg.NewEnforcer(a.config.Database.GetDSN(), "configs/rbac_model.conf", a.logger)
 		if err != nil {
@@ -89,7 +105,7 @@ func (a *App) Initialize() error {
 		a.logger.Info("Casbin enforcer initialized successfully")
 
 		// Create dependency container
-		c, err := container.NewContainer(a.config, db, a.logger, casbinEnforcer)
+		c, err := container.NewContainer(a.config, db, a.logger, casbinEnforcer, redisClient)
 		if err != nil {
 			return fmt.Errorf("failed to create dependency container: %w", err)
 		}
@@ -215,7 +231,7 @@ func (a *App) Shutdown(ctx context.Context) error {
 		a.logger.Info("gRPC server stopped")
 	}
 
-	// Close container resources
+	// Close container resources (includes Redis)
 	if a.container != nil {
 		if err := a.container.Close(); err != nil {
 			shutdownErrors = append(shutdownErrors, fmt.Errorf("container close error: %w", err))
@@ -225,6 +241,13 @@ func (a *App) Shutdown(ctx context.Context) error {
 	// Close database connection
 	if a.db != nil {
 		database.Close(a.db, a.logger)
+	}
+
+	// Close Redis connection (if not already closed by container)
+	if a.redisClient != nil && a.container == nil {
+		if err := a.redisClient.Close(); err != nil {
+			shutdownErrors = append(shutdownErrors, fmt.Errorf("redis close error: %w", err))
+		}
 	}
 
 	// Sync logger

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/tvttt/iam-services/internal/config"
@@ -22,6 +23,12 @@ func LoadConfig() (*config.Config, error) {
 			Password: getEnv("DB_PASSWORD", "postgres"),
 			DBName:   getEnv("DB_NAME", "iam_db"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+		},
+		Redis: config.RedisConfig{
+			Host:     getEnv("REDIS_HOST", "localhost"),
+			Port:     getEnv("REDIS_PORT", "6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+			DB:       getIntEnv("REDIS_DB", 0),
 		},
 		JWT: config.JWTConfig{
 			Secret:               getEnv("JWT_SECRET", "your-secret-key"),
@@ -49,6 +56,16 @@ func getEnv(key, defaultValue string) string {
 func parseDuration(value string, defaultValue time.Duration) time.Duration {
 	if duration, err := time.ParseDuration(value); err == nil {
 		return duration
+	}
+	return defaultValue
+}
+
+// getIntEnv gets an integer environment variable or returns a default value
+func getIntEnv(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
 	}
 	return defaultValue
 }

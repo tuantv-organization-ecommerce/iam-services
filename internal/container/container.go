@@ -5,6 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/tvttt/iam-services/internal/cache"
 	"github.com/tvttt/iam-services/internal/config"
 	"github.com/tvttt/iam-services/internal/dao"
 	"github.com/tvttt/iam-services/internal/handler"
@@ -24,6 +25,8 @@ type Container struct {
 	DB             *sql.DB
 	Logger         *zap.Logger
 	CasbinEnforcer *casbinPkg.Enforcer
+	RedisClient    *cache.RedisClient
+	TokenStorage   *cache.TokenStorage
 
 	// Managers (external packages)
 	JWTManager      *jwt.JWTManager
@@ -68,16 +71,21 @@ func NewContainer(
 	db *sql.DB,
 	logger *zap.Logger,
 	casbinEnforcer *casbinPkg.Enforcer,
+	redisClient *cache.RedisClient,
 ) (*Container, error) {
 	c := &Container{
 		Config:         cfg,
 		DB:             db,
 		Logger:         logger,
 		CasbinEnforcer: casbinEnforcer,
+		RedisClient:    redisClient,
 	}
 
 	// Initialize managers
 	c.initializeManagers()
+
+	// Initialize cache/storage
+	c.initializeCache()
 
 	// Initialize DAOs
 	c.initializeDAOs()
@@ -105,6 +113,17 @@ func (c *Container) initializeManagers() {
 	c.PasswordManager = password.NewPasswordManager()
 }
 
+// initializeCache creates cache-related components
+func (c *Container) initializeCache() {
+	// Initialize token storage if Redis client is available
+	if c.RedisClient != nil {
+		c.TokenStorage = cache.NewTokenStorage(c.RedisClient, c.Logger)
+		c.Logger.Info("Token storage initialized successfully")
+	} else {
+		c.Logger.Warn("Redis client not available, token storage disabled")
+	}
+}
+
 // initializeDAOs creates all Data Access Objects
 func (c *Container) initializeDAOs() {
 	c.DAOs = &DAORegistry{
@@ -129,12 +148,15 @@ func (c *Container) initializeServices() error {
 		repository.NewAuthorizationRepository(c.DAOs.UserRole, c.DAOs.RolePermission, c.DAOs.Permission),
 		c.JWTManager,
 		c.PasswordManager,
+		c.TokenStorage,
+		c.Logger,
 	)
 
 	c.Services.Authorization = service.NewAuthorizationService(
 		repository.NewAuthorizationRepository(c.DAOs.UserRole, c.DAOs.RolePermission, c.DAOs.Permission),
 		repository.NewUserRepository(c.DAOs.User),
 		repository.NewRoleRepository(c.DAOs.Role, c.DAOs.RolePermission),
+		c.Logger,
 	)
 
 	c.Services.Role = service.NewRoleService(
@@ -180,6 +202,13 @@ func (c *Container) initializeHandlers() {
 
 // Close cleans up resources
 func (c *Container) Close() error {
+	// Close Redis connection
+	if c.RedisClient != nil {
+		if err := c.RedisClient.Close(); err != nil {
+			c.Logger.Error("Failed to close Redis connection", zap.Error(err))
+		}
+	}
+
 	if c.Logger != nil {
 		if err := c.Logger.Sync(); err != nil {
 			// Ignore sync errors on stdout/stderr (common on some platforms)

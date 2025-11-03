@@ -14,6 +14,7 @@ import (
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
+	Redis    RedisConfig
 	JWT      JWTConfig
 	Log      LogConfig
 	Swagger  SwaggerConfig
@@ -35,6 +36,14 @@ type DatabaseConfig struct {
 	Password string
 	DBName   string
 	SSLMode  string
+}
+
+// RedisConfig holds Redis configuration
+type RedisConfig struct {
+	Host     string
+	Port     string
+	Password string
+	DB       int
 }
 
 // JWTConfig holds JWT configuration
@@ -63,10 +72,10 @@ type SwaggerConfig struct {
 
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
-	// Try to load .env file (optional)
+	// Try to load .env file (optional, not required if env vars are set)
 	if err := godotenv.Load(); err != nil {
-		log.Printf("Error loading .env file: %v", err)
-		return nil, err
+		log.Printf("No .env file found or error loading it (this is OK if using env vars): %v", err)
+		// Don't return error - env vars may be set directly
 	}
 
 	config := &Config{
@@ -83,6 +92,12 @@ func Load() (*Config, error) {
 			Password: getEnv("DB_PASSWORD", "postgres"),
 			DBName:   getEnv("DB_NAME", "iam_db"),
 			SSLMode:  getEnv("DB_SSL_MODE", "disable"),
+		},
+		Redis: RedisConfig{
+			Host:     getEnv("REDIS_HOST", "localhost"),
+			Port:     getEnv("REDIS_PORT", "6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+			DB:       getIntEnv("REDIS_DB", 0),
 		},
 		JWT: JWTConfig{
 			Secret:               getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
@@ -125,6 +140,11 @@ func (c *ServerConfig) GetHTTPServerAddress() string {
 	return fmt.Sprintf("%s:%s", c.HTTPHost, c.HTTPPort)
 }
 
+// GetAddress returns the Redis server address
+func (c *RedisConfig) GetAddress() string {
+	return fmt.Sprintf("%s:%s", c.Host, c.Port)
+}
+
 func getEnv(key, defaultValue string) string {
 	value := os.Getenv(key)
 	if value == "" {
@@ -151,6 +171,18 @@ func getBoolEnv(key string, defaultValue bool) bool {
 		return defaultValue
 	}
 	value, err := strconv.ParseBool(valueStr)
+	if err != nil {
+		return defaultValue
+	}
+	return value
+}
+
+func getIntEnv(key string, defaultValue int) int {
+	valueStr := os.Getenv(key)
+	if valueStr == "" {
+		return defaultValue
+	}
+	value, err := strconv.Atoi(valueStr)
 	if err != nil {
 		return defaultValue
 	}

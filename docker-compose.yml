@@ -19,6 +19,20 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: iam-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   iam-service:
     build:
       context: ..
@@ -33,6 +47,10 @@ services:
       DB_PASSWORD: postgres
       DB_NAME: iam_db
       DB_SSL_MODE: disable
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      REDIS_DB: 0
       JWT_SECRET: your-secret-key-change-this-in-production
       JWT_EXPIRATION_HOURS: 24
       JWT_REFRESH_EXPIRATION_HOURS: 168
@@ -43,8 +61,11 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  redis_data:
 

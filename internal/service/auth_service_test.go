@@ -128,7 +128,7 @@ func TestRegister_Success(t *testing.T) {
 	jwtManager := jwt.NewJWTManager("test-secret-min-32-chars-long", time.Hour, time.Hour*24)
 	passwordManager := password.NewPasswordManager()
 
-	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager)
+	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager, nil, nil)
 
 	// Mock expectations
 	mockUserRepo.On("CreateUser", mock.Anything, mock.AnythingOfType("*domain.User")).Return(nil)
@@ -157,7 +157,7 @@ func TestRegister_EmptyUsername(t *testing.T) {
 	jwtManager := jwt.NewJWTManager("test-secret-min-32-chars-long", time.Hour, time.Hour*24)
 	passwordManager := password.NewPasswordManager()
 
-	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager)
+	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager, nil, nil)
 
 	// Execute
 	ctx := context.Background()
@@ -176,7 +176,7 @@ func TestLogin_Success(t *testing.T) {
 	jwtManager := jwt.NewJWTManager("test-secret-min-32-chars-long", time.Hour, time.Hour*24)
 	passwordManager := password.NewPasswordManager()
 
-	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager)
+	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager, nil, nil)
 
 	// Create hashed password
 	hashedPassword, _ := passwordManager.HashPassword("password123")
@@ -225,7 +225,7 @@ func TestLogin_InvalidPassword(t *testing.T) {
 	jwtManager := jwt.NewJWTManager("test-secret-min-32-chars-long", time.Hour, time.Hour*24)
 	passwordManager := password.NewPasswordManager()
 
-	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager)
+	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager, nil, nil)
 
 	// Create hashed password
 	hashedPassword, _ := passwordManager.HashPassword("password123")
@@ -265,7 +265,7 @@ func TestLogin_InactiveUser(t *testing.T) {
 	jwtManager := jwt.NewJWTManager("test-secret-min-32-chars-long", time.Hour, time.Hour*24)
 	passwordManager := password.NewPasswordManager()
 
-	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager)
+	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager, nil, nil)
 
 	// Create hashed password
 	hashedPassword, _ := passwordManager.HashPassword("password123")
@@ -305,7 +305,7 @@ func TestVerifyToken_Success(t *testing.T) {
 	jwtManager := jwt.NewJWTManager("test-secret-min-32-chars-long", time.Hour, time.Hour*24)
 	passwordManager := password.NewPasswordManager()
 
-	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager)
+	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager, nil, nil)
 
 	// Generate a valid token
 	token, err := jwtManager.GenerateAccessToken("user-123", "testuser", []string{"user", "admin"})
@@ -328,7 +328,7 @@ func TestVerifyToken_InvalidToken(t *testing.T) {
 	jwtManager := jwt.NewJWTManager("test-secret-min-32-chars-long", time.Hour, time.Hour*24)
 	passwordManager := password.NewPasswordManager()
 
-	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager)
+	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager, nil, nil)
 
 	// Execute with invalid token
 	ctx := context.Background()
@@ -347,7 +347,7 @@ func TestLogout_Success(t *testing.T) {
 	jwtManager := jwt.NewJWTManager("test-secret-min-32-chars-long", time.Hour, time.Hour*24)
 	passwordManager := password.NewPasswordManager()
 
-	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager)
+	service := NewAuthService(mockUserRepo, mockAuthzRepo, jwtManager, passwordManager, nil, nil)
 
 	// Execute
 	ctx := context.Background()
