@@ -1,0 +1,51 @@
+# ============================================
+# IAM Service Docker Configuration Template
+# ============================================
+# Copy this file to config-docker.yml for Docker Compose
+# cp config-docker.yml.example config-docker.yml
+
+# Server Configuration
+server:
+  host: "0.0.0.0"
+  port: 50051
+  http_host: "0.0.0.0"
+  http_port: 8080
+
+# Database Configuration (Docker services)
+database:
+  host: "postgres"          # Container name from docker-compose.yml
+  port: 5432
+  user: "postgres"
+  password: "postgres"      # CHANGE IN PRODUCTION!
+  dbname: "iam_db"
+  sslmode: "disable"        # Use "require" in production
+
+# Redis Configuration (Docker services)
+redis:
+  host: "redis"             # Container name from docker-compose.yml
+  port: 6379
+  password: ""              # Set if Redis requires authentication
+  db: 0
+
+# JWT Configuration
+jwt:
+  secret: "CHANGE-THIS-TO-A-SECURE-RANDOM-STRING-AT-LEAST-32-CHARACTERS-LONG"
+  access_token_expiration_hours: 24
+  refresh_token_expiration_hours: 168
+
+# Logging Configuration
+log:
+  level: "info"             # Options: debug, info, warn, error
+  encoding: "json"          # Options: json, console
+
+# Swagger Configuration
+swagger:
+  enabled: true
+  base_path: "/swagger/"
+  spec_path: "/swagger.json"
+  title: "IAM Service API Documentation"
+  auth:
+    username: "admin"
+    password: "changeme"    # CHANGE IN PRODUCTION!
+    realm: "IAM Service API Documentation"
+

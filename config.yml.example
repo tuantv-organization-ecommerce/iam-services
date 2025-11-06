@@ -1,0 +1,51 @@
+# ============================================
+# IAM Service Configuration Template
+# ============================================
+# Copy this file to config.yml and customize
+# cp config.yml.example config.yml
+
+# Server Configuration
+server:
+  host: "0.0.0.0"           # gRPC server host
+  port: 50051               # gRPC server port
+  http_host: "0.0.0.0"      # HTTP REST API host
+  http_port: 8080           # HTTP REST API port
+
+# Database Configuration
+database:
+  host: "localhost"         # Change to "postgres" for Docker
+  port: 5432
+  user: "postgres"
+  password: "postgres"      # CHANGE IN PRODUCTION!
+  dbname: "iam_db"
+  sslmode: "disable"        # Use "require" or "verify-full" in production
+
+# Redis Configuration
+redis:
+  host: "localhost"         # Change to "redis" for Docker
+  port: 6379
+  password: ""              # Set if Redis requires authentication
+  db: 0
+
+# JWT Configuration
+jwt:
+  secret: "CHANGE-THIS-TO-A-SECURE-RANDOM-STRING-AT-LEAST-32-CHARACTERS-LONG"
+  access_token_expiration_hours: 24
+  refresh_token_expiration_hours: 168  # 7 days
+
+# Logging Configuration
+log:
+  level: "info"             # Options: debug, info, warn, error
+  encoding: "json"          # Options: json, console
+
+# Swagger Configuration
+swagger:
+  enabled: true
+  base_path: "/swagger/"
+  spec_path: "/swagger.json"
+  title: "IAM Service API Documentation"
+  auth:
+    username: "admin"
+    password: "changeme"    # CHANGE IN PRODUCTION!
+    realm: "IAM Service API Documentation"
+

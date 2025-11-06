@@ -20,7 +20,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.2-alpine
     container_name: iam-redis
     ports:
       - "6379:6379"
@@ -38,31 +38,29 @@ services:
       context: ..
       dockerfile: iam-services/Dockerfile
     container_name: iam-service
-    environment:
-      SERVER_HOST: 0.0.0.0
-      SERVER_PORT: 50051
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: iam_db
-      DB_SSL_MODE: disable
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ""
-      REDIS_DB: 0
-      JWT_SECRET: your-secret-key-change-this-in-production
-      JWT_EXPIRATION_HOURS: 24
-      JWT_REFRESH_EXPIRATION_HOURS: 168
-      LOG_LEVEL: info
-      LOG_ENCODING: json
+    volumes:
+      # Mount Docker-specific config
+      - ./config-docker.yml:/app/config.yml:ro
+    # Uncomment environment section to override config.yml values:
+    # environment:
+    #   IAM_SERVER_HTTP_PORT: 9090
+    #   IAM_DATABASE_PASSWORD: custom_password
+    #   IAM_JWT_SECRET: custom_jwt_secret
+    #   IAM_LOG_LEVEL: debug
     ports:
       - "50051:50051"
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
 volumes:

@@ -2,12 +2,11 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
-	"strconv"
 	"time"
 
-	"github.com/joho/godotenv"
-	"log"
+	"github.com/spf13/viper"
 )
 
 // Config holds all configuration for the application
@@ -70,54 +69,130 @@ type SwaggerConfig struct {
 	AuthRealm    string
 }
 
-// Load loads configuration from environment variables
+// Load loads configuration from YAML file
 func Load() (*Config, error) {
-	// Try to load .env file (optional, not required if env vars are set)
-	if err := godotenv.Load(); err != nil {
-		log.Printf("No .env file found or error loading it (this is OK if using env vars): %v", err)
-		// Don't return error - env vars may be set directly
+	// Get current working directory
+	currentDir := getCurrentDir()
+	log.Printf("Current working directory: %s", currentDir)
+
+	// Setup Viper
+	v := viper.New()
+	v.SetConfigName("config")
+	v.SetConfigType("yaml")
+
+	// Add multiple search paths
+	v.AddConfigPath(".")                  // Current directory
+	v.AddConfigPath("./configs")          // configs directory
+	v.AddConfigPath("../../")             // From cmd/server/
+	v.AddConfigPath("../../../")          // Extra fallback
+	v.AddConfigPath("/etc/iam-services/") // System config (Linux)
+
+	// Read config file
+	if err := v.ReadInConfig(); err != nil {
+		log.Printf("WARNING: Failed to read config file: %v", err)
+		log.Printf("Will use default values")
+		// Don't return error - will use defaults
+	} else {
+		log.Printf("SUCCESS: Config file loaded from: %s", v.ConfigFileUsed())
 	}
 
+	// Allow environment variables to override config file
+	v.AutomaticEnv()
+	v.SetEnvPrefix("IAM") // will look for env vars like IAM_SERVER_HOST
+
+	// Set defaults FIRST
+	v.SetDefault("server.host", "0.0.0.0")
+	v.SetDefault("server.port", "50051")
+	v.SetDefault("server.http_host", "0.0.0.0")
+	v.SetDefault("server.http_port", "8080")
+	v.SetDefault("database.host", "localhost")
+	v.SetDefault("database.port", "5432")
+	v.SetDefault("database.user", "postgres")
+	v.SetDefault("database.password", "postgres")
+	v.SetDefault("database.dbname", "iam_db")
+	v.SetDefault("database.sslmode", "disable")
+	v.SetDefault("redis.host", "localhost")
+	v.SetDefault("redis.port", "6379")
+	v.SetDefault("redis.password", "")
+	v.SetDefault("redis.db", 0)
+	v.SetDefault("jwt.secret", "your-secret-key-change-this-in-production")
+	v.SetDefault("jwt.access_token_expiration_hours", 24)
+	v.SetDefault("jwt.refresh_token_expiration_hours", 168)
+	v.SetDefault("log.level", "info")
+	v.SetDefault("log.encoding", "json")
+	v.SetDefault("swagger.enabled", true)
+	v.SetDefault("swagger.base_path", "/swagger/")
+	v.SetDefault("swagger.spec_path", "/swagger.json")
+	v.SetDefault("swagger.title", "IAM Service API Documentation")
+	v.SetDefault("swagger.auth.username", "admin")
+	v.SetDefault("swagger.auth.password", "changeme")
+	v.SetDefault("swagger.auth.realm", "IAM Service API Documentation")
+
+	// Parse configuration into struct (matching config.yml structure)
 	config := &Config{
 		Server: ServerConfig{
-			Host:     getEnv("SERVER_HOST", "0.0.0.0"),
-			Port:     getEnv("SERVER_PORT", "50051"),
-			HTTPHost: getEnv("HTTP_HOST", "0.0.0.0"),
-			HTTPPort: getEnv("HTTP_PORT", "8080"),
+			Host:     v.GetString("server.host"),
+			Port:     v.GetString("server.port"),
+			HTTPHost: v.GetString("server.http_host"), // Match config.yml: http_host
+			HTTPPort: v.GetString("server.http_port"), // Match config.yml: http_port
 		},
 		Database: DatabaseConfig{
-			Host:     getEnv("DB_HOST", "localhost"),
-			Port:     getEnv("DB_PORT", "5432"),
-			User:     getEnv("DB_USER", "postgres"),
-			Password: getEnv("DB_PASSWORD", "postgres"),
-			DBName:   getEnv("DB_NAME", "iam_db"),
-			SSLMode:  getEnv("DB_SSL_MODE", "disable"),
+			Host:     v.GetString("database.host"),
+			Port:     v.GetString("database.port"),
+			User:     v.GetString("database.user"),
+			Password: v.GetString("database.password"),
+			DBName:   v.GetString("database.dbname"),
+			SSLMode:  v.GetString("database.sslmode"),
 		},
 		Redis: RedisConfig{
-			Host:     getEnv("REDIS_HOST", "localhost"),
-			Port:     getEnv("REDIS_PORT", "6379"),
-			Password: getEnv("REDIS_PASSWORD", ""),
-			DB:       getIntEnv("REDIS_DB", 0),
+			Host:     v.GetString("redis.host"),
+			Port:     v.GetString("redis.port"),
+			Password: v.GetString("redis.password"),
+			DB:       v.GetInt("redis.db"),
 		},
 		JWT: JWTConfig{
-			Secret:               getEnv("JWT_SECRET", "your-secret-key-change-this-in-production"),
-			AccessTokenDuration:  getDurationEnv("JWT_EXPIRATION_HOURS", 24) * time.Hour,
-			RefreshTokenDuration: getDurationEnv("JWT_REFRESH_EXPIRATION_HOURS", 168) * time.Hour,
+			Secret:               v.GetString("jwt.secret"),
+			AccessTokenDuration:  time.Duration(v.GetInt("jwt.access_token_expiration_hours")) * time.Hour,
+			RefreshTokenDuration: time.Duration(v.GetInt("jwt.refresh_token_expiration_hours")) * time.Hour,
 		},
 		Log: LogConfig{
-			Level:    getEnv("LOG_LEVEL", "info"),
-			Encoding: getEnv("LOG_ENCODING", "json"),
+			Level:    v.GetString("log.level"),
+			Encoding: v.GetString("log.encoding"),
 		},
 		Swagger: SwaggerConfig{
-			Enabled:      getBoolEnv("SWAGGER_ENABLED", true),
-			BasePath:     getEnv("SWAGGER_BASE_PATH", "/swagger/"),
-			SpecPath:     getEnv("SWAGGER_SPEC_PATH", "/swagger.json"),
-			Title:        getEnv("SWAGGER_TITLE", "IAM Service API Documentation"),
-			AuthUsername: getEnv("SWAGGER_AUTH_USERNAME", "admin"),
-			AuthPassword: getEnv("SWAGGER_AUTH_PASSWORD", "changeme"),
-			AuthRealm:    getEnv("SWAGGER_AUTH_REALM", "IAM Service API Documentation"),
+			Enabled:      v.GetBool("swagger.enabled"),
+			BasePath:     v.GetString("swagger.base_path"),
+			SpecPath:     v.GetString("swagger.spec_path"),
+			Title:        v.GetString("swagger.title"),
+			AuthUsername: v.GetString("swagger.auth.username"),
+			AuthPassword: v.GetString("swagger.auth.password"),
+			AuthRealm:    v.GetString("swagger.auth.realm"),
 		},
 	}
+
+	// CRITICAL: Ensure HTTP host and port are never empty
+	if config.Server.HTTPHost == "" {
+		log.Printf("WARNING: server.http.host not set, using default: 0.0.0.0")
+		config.Server.HTTPHost = "0.0.0.0"
+	}
+	if config.Server.HTTPPort == "" {
+		log.Printf("WARNING: server.http.port not set, using default: 8080")
+		config.Server.HTTPPort = "8080"
+	}
+	if config.Server.Host == "" {
+		config.Server.Host = "0.0.0.0"
+	}
+	if config.Server.Port == "" {
+		config.Server.Port = "50051"
+	}
+
+	// Log final configuration
+	log.Printf("✓ Server Configuration:")
+	log.Printf("  - gRPC: %s:%s", config.Server.Host, config.Server.Port)
+	log.Printf("  - HTTP: %s:%s", config.Server.HTTPHost, config.Server.HTTPPort)
+	log.Printf("✓ Database: %s@%s:%s/%s", config.Database.User, config.Database.Host, config.Database.Port, config.Database.DBName)
+	log.Printf("✓ Redis: %s:%s (DB:%d)", config.Redis.Host, config.Redis.Port, config.Redis.DB)
+	log.Printf("✓ Log Level: %s", config.Log.Level)
 
 	return config, nil
 }
@@ -145,46 +220,11 @@ func (c *RedisConfig) GetAddress() string {
 	return fmt.Sprintf("%s:%s", c.Host, c.Port)
 }
 
-func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
-}
-
-func getDurationEnv(key string, defaultValue int) time.Duration {
-	valueStr := os.Getenv(key)
-	if valueStr == "" {
-		return time.Duration(defaultValue)
-	}
-	value, err := strconv.Atoi(valueStr)
+// getCurrentDir returns the current working directory
+func getCurrentDir() string {
+	dir, err := os.Getwd()
 	if err != nil {
-		return time.Duration(defaultValue)
+		return "unknown"
 	}
-	return time.Duration(value)
-}
-
-func getBoolEnv(key string, defaultValue bool) bool {
-	valueStr := os.Getenv(key)
-	if valueStr == "" {
-		return defaultValue
-	}
-	value, err := strconv.ParseBool(valueStr)
-	if err != nil {
-		return defaultValue
-	}
-	return value
-}
-
-func getIntEnv(key string, defaultValue int) int {
-	valueStr := os.Getenv(key)
-	if valueStr == "" {
-		return defaultValue
-	}
-	value, err := strconv.Atoi(valueStr)
-	if err != nil {
-		return defaultValue
-	}
-	return value
+	return dir
 }

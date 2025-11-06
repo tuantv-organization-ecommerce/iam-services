@@ -4,35 +4,57 @@
 *.dll
 *.so
 *.dylib
+bin/
+dist/
 
 # Test binary, built with `go test -c`
 *.test
 
 # Output of the go coverage tool
 *.out
+coverage.txt
+coverage.html
 
 # Dependency directories
 vendor/
 
 # Go workspace file
 go.work
-go.work.sum
 
-# Environment variables
+# Environment files (.env - old style)
 .env
+.env.local
+.env.*.local
 
-# IDE specific files
-.idea/
+# Configuration files (YAML - new style)
+config.yml
+config.local.yml
+config-docker.yml
+config.*.yml
+# Keep *.example.yml files in git
+!config.yml.example
+!config-docker.yml.example
+
+# IDE
 .vscode/
+.idea/
 *.swp
 *.swo
 *~
 
-# OS specific files
+# OS
 .DS_Store
 Thumbs.db
 
-# Build output
-bin/
-dist/
+# Logs
+*.log
+logs/
 
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/

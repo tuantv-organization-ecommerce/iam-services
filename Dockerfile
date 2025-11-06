@@ -25,7 +25,8 @@ RUN go build -o bin/iam-service cmd/server/main.go
 # Runtime stage
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates
+# Install runtime dependencies
+RUN apk --no-cache add ca-certificates wget
 
 WORKDIR /app
 
@@ -38,8 +39,9 @@ COPY --from=builder /app/iam-services/migrations ./migrations
 # Copy configs (required for Casbin models)
 COPY --from=builder /app/iam-services/configs ./configs
 
-# Expose gRPC port
+# Expose gRPC port and HTTP port
 EXPOSE 50051
+EXPOSE 8080
 
 # Run the application
 CMD ["./iam-service"]
